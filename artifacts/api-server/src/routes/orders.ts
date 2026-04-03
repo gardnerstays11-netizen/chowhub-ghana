@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, ordersTable, listingsTable } from "@workspace/db";
+import { db, ordersTable, listingsTable, usersTable } from "@workspace/db";
 import { authMiddleware } from "../lib/auth";
+import { sendEmail, orderConfirmationEmail, orderStatusUpdateEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,19 @@ router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
   }).returning();
 
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, listingId));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  if (user && listing) {
+    const emailContent = orderConfirmationEmail({
+      customerName: user.name,
+      orderType: order.orderType,
+      listingName: listing.name,
+      items: order.items as any[],
+      totalAmount: order.totalAmount ? parseFloat(String(order.totalAmount)) : undefined,
+      paymentMethod: 'whatsapp',
+    });
+    await sendEmail({ to: user.email, ...emailContent });
+  }
 
   res.status(201).json({
     id: order.id,
@@ -35,8 +49,8 @@ router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
     paymentChannel: order.paymentChannel,
     status: order.status,
     listingName: listing?.name ?? null,
-    userName: null,
-    userPhone: null,
+    userName: user?.name ?? null,
+    userPhone: user?.phone ?? null,
     createdAt: order.createdAt.toISOString(),
   });
 });
@@ -69,6 +83,52 @@ router.get("/orders/mine", authMiddleware, async (req, res): Promise<void> => {
     userPhone: null,
     createdAt: o.order.createdAt.toISOString(),
   })));
+});
+
+router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promise<void> => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+  const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
+
+  if (!status || !validStatuses.includes(status)) {
+    res.status(400).json({ error: `Status must be one of: ${validStatuses.join(', ')}` });
+    return;
+  }
+
+  const [order] = await db.update(ordersTable)
+    .set({ status })
+    .where(eq(ordersTable.id, orderId))
+    .returning();
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, order.listingId));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId));
+
+  if (user && listing) {
+    const emailContent = orderStatusUpdateEmail({
+      customerName: user.name,
+      listingName: listing.name,
+      orderId: order.id,
+      newStatus: status,
+    });
+    await sendEmail({ to: user.email, ...emailContent });
+  }
+
+  res.json({
+    id: order.id,
+    listingId: order.listingId,
+    userId: order.userId,
+    items: order.items,
+    orderType: order.orderType,
+    status: order.status,
+    totalAmount: order.totalAmount,
+    paymentStatus: order.paymentStatus,
+    createdAt: order.createdAt.toISOString(),
+  });
 });
 
 export default router;

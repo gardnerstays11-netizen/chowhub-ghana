@@ -6,18 +6,13 @@ import {
 } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import { ObjectPermission } from "../lib/objectAcl";
+import { authMiddleware } from "../lib/auth";
+import { optimizeImage, isImageContentType, generateThumbnail } from "../lib/imageOptimizer";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-/**
- * POST /storage/uploads/request-url
- *
- * Request a presigned URL for file upload.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
- * Then uploads the file directly to the returned presigned URL.
- */
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", authMiddleware, async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });
@@ -43,13 +38,81 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
   }
 });
 
-/**
- * GET /storage/public-objects/*
- *
- * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
- * These are unconditionally public — no authentication or ACL checks.
- * IMPORTANT: Always provide this endpoint when object storage is set up.
- */
+router.post("/storage/uploads/optimized", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const contentType = req.headers["content-type"] || "";
+    if (!isImageContentType(contentType)) {
+      res.status(400).json({ error: "Only image files can be optimized" });
+      return;
+    }
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const rawBuffer = Buffer.concat(chunks);
+
+    if (rawBuffer.length === 0) {
+      res.status(400).json({ error: "No image data received" });
+      return;
+    }
+
+    const maxWidth = parseInt(req.query.maxWidth as string) || 1920;
+    const maxHeight = parseInt(req.query.maxHeight as string) || 1920;
+    const quality = parseInt(req.query.quality as string) || 80;
+    const format = (req.query.format as string) || "webp";
+
+    const optimized = await optimizeImage(rawBuffer, {
+      maxWidth,
+      maxHeight,
+      quality,
+      format: format as "jpeg" | "webp" | "png",
+    });
+
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+    const uploadRes = await fetch(uploadURL, {
+      method: "PUT",
+      headers: { "Content-Type": optimized.contentType },
+      body: optimized.buffer,
+    });
+
+    if (!uploadRes.ok) {
+      res.status(500).json({ error: "Failed to upload optimized image" });
+      return;
+    }
+
+    let thumbnailPath: string | null = null;
+    try {
+      const thumb = await generateThumbnail(rawBuffer);
+      const thumbUploadURL = await objectStorageService.getObjectEntityUploadURL();
+      thumbnailPath = objectStorageService.normalizeObjectEntityPath(thumbUploadURL);
+      await fetch(thumbUploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": "image/webp" },
+        body: thumb,
+      });
+    } catch (thumbErr) {
+      req.log.warn({ err: thumbErr }, "Thumbnail generation failed, continuing without thumbnail");
+    }
+
+    res.json({
+      objectPath,
+      thumbnailPath,
+      contentType: optimized.contentType,
+      width: optimized.width,
+      height: optimized.height,
+      originalSize: rawBuffer.length,
+      optimizedSize: optimized.buffer.length,
+      savings: Math.round((1 - optimized.buffer.length / rawBuffer.length) * 100),
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "Error optimizing image");
+    res.status(500).json({ error: "Failed to optimize image" });
+  }
+});
+
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
     const raw = req.params.filePath;
@@ -77,34 +140,12 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
   }
 });
 
-/**
- * GET /storage/objects/*
- *
- * Serve object entities from PRIVATE_OBJECT_DIR.
- * These are served from a separate path from /public-objects and can optionally
- * be protected with authentication or ACL checks based on the use case.
- */
 router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
-
-    // --- Protected route example (uncomment when using replit-auth) ---
-    // if (!req.isAuthenticated()) {
-    //   res.status(401).json({ error: "Unauthorized" });
-    //   return;
-    // }
-    // const canAccess = await objectStorageService.canAccessObjectEntity({
-    //   userId: req.user.id,
-    //   objectFile,
-    //   requestedPermission: ObjectPermission.READ,
-    // });
-    // if (!canAccess) {
-    //   res.status(403).json({ error: "Forbidden" });
-    //   return;
-    // }
 
     const response = await objectStorageService.downloadObject(objectFile);
 

@@ -12,6 +12,8 @@ import ListingDetail from "@/pages/listing-detail";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 
 // Vendor
 import VendorLogin from "@/pages/vendor/login";
@@ -23,6 +25,7 @@ import VendorPhotos from "@/pages/vendor/photos";
 import VendorReviews from "@/pages/vendor/reviews";
 import VendorAnalytics from "@/pages/vendor/analytics";
 import VendorSettings from "@/pages/vendor/settings";
+import VendorSubscription from "@/pages/vendor/subscription";
 
 // Admin
 import AdminLogin from "@/pages/admin/login";
@@ -55,6 +58,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* Vendor Routes */}
       <Route path="/vendor/login" component={VendorLogin} />
@@ -66,6 +71,7 @@ function Router() {
       <Route path="/vendor/reviews" component={VendorReviews} />
       <Route path="/vendor/analytics" component={VendorAnalytics} />
       <Route path="/vendor/settings" component={VendorSettings} />
+      <Route path="/vendor/subscription" component={VendorSubscription} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />

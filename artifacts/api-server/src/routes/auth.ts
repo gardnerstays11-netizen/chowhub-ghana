@@ -1,8 +1,10 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
-import { db, usersTable, vendorsTable } from "@workspace/db";
+import crypto from "crypto";
+import { eq, and, gt, isNull } from "drizzle-orm";
+import { db, usersTable, vendorsTable, passwordResetsTable } from "@workspace/db";
 import { signToken, authMiddleware, vendorAuthMiddleware } from "../lib/auth";
+import { sendEmail, passwordResetEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -122,6 +124,156 @@ router.patch("/auth/me/update", authMiddleware, async (req, res): Promise<void> 
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
   });
+});
+
+router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  await db.insert(passwordResetsTable).values({
+    email,
+    token: resetToken,
+    expiresAt,
+  });
+
+  if (user) {
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : "https://chowhub.gh";
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+    const emailContent = passwordResetEmail({ name: user.name, resetUrl });
+    await sendEmail({ to: email, ...emailContent });
+  }
+
+  res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+});
+
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    res.status(400).json({ error: "Token and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+
+  const [resetRecord] = await db.select()
+    .from(passwordResetsTable)
+    .where(
+      and(
+        eq(passwordResetsTable.token, token),
+        gt(passwordResetsTable.expiresAt, new Date()),
+        isNull(passwordResetsTable.usedAt)
+      )
+    );
+
+  if (!resetRecord) {
+    res.status(400).json({ error: "Invalid or expired reset token" });
+    return;
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const [user] = await db.update(usersTable)
+    .set({ password: hashedPassword })
+    .where(eq(usersTable.email, resetRecord.email))
+    .returning();
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  await db.update(passwordResetsTable)
+    .set({ usedAt: new Date() })
+    .where(eq(passwordResetsTable.id, resetRecord.id));
+
+  res.json({ message: "Password reset successfully. You can now log in with your new password." });
+});
+
+router.post("/auth/vendor/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+
+  const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.email, email));
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  await db.insert(passwordResetsTable).values({
+    email,
+    token: resetToken,
+    expiresAt,
+  });
+
+  if (vendor) {
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+      : "https://chowhub.gh";
+    const resetUrl = `${baseUrl}/vendor/reset-password?token=${resetToken}`;
+    const emailContent = passwordResetEmail({ name: vendor.businessName, resetUrl });
+    await sendEmail({ to: email, ...emailContent });
+  }
+
+  res.json({ message: "If an account exists with that email, a password reset link has been sent." });
+});
+
+router.post("/auth/vendor/reset-password", async (req, res): Promise<void> => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) {
+    res.status(400).json({ error: "Token and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters" });
+    return;
+  }
+
+  const [resetRecord] = await db.select()
+    .from(passwordResetsTable)
+    .where(
+      and(
+        eq(passwordResetsTable.token, token),
+        gt(passwordResetsTable.expiresAt, new Date()),
+        isNull(passwordResetsTable.usedAt)
+      )
+    );
+
+  if (!resetRecord) {
+    res.status(400).json({ error: "Invalid or expired reset token" });
+    return;
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const [vendor] = await db.update(vendorsTable)
+    .set({ password: hashedPassword })
+    .where(eq(vendorsTable.email, resetRecord.email))
+    .returning();
+
+  if (!vendor) {
+    res.status(404).json({ error: "Vendor not found" });
+    return;
+  }
+
+  await db.update(passwordResetsTable)
+    .set({ usedAt: new Date() })
+    .where(eq(passwordResetsTable.id, resetRecord.id));
+
+  res.json({ message: "Password reset successfully. You can now log in with your new password." });
 });
 
 router.post("/auth/vendor/register", async (req, res): Promise<void> => {

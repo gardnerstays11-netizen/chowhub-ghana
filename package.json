@@ -11,7 +11,8 @@
   "private": true,
   "pnpm": {
     "onlyBuiltDependencies": [
-      "bcrypt"
+      "bcrypt",
+      "sharp"
     ]
   },
   "devDependencies": {

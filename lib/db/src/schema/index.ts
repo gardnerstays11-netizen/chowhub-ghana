@@ -17,3 +17,4 @@ export * from "./subscription-packages";
 export * from "./categories";
 export * from "./editors-picks";
 export * from "./payments";
+export * from "./password-resets";

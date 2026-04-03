@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, reservationsTable, listingsTable, usersTable } from "@workspace/db";
 import { authMiddleware } from "../lib/auth";
+import { sendEmail, reservationConfirmationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,19 @@ router.post("/reservations", authMiddleware, async (req, res): Promise<void> => 
   }).returning();
 
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, listingId));
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  if (user && listing) {
+    const emailContent = reservationConfirmationEmail({
+      customerName: user.name,
+      listingName: listing.name,
+      date: reservation.date,
+      time: reservation.time,
+      partySize: reservation.partySize,
+      occasion: reservation.occasion ?? undefined,
+    });
+    await sendEmail({ to: user.email, ...emailContent });
+  }
 
   res.status(201).json({
     id: reservation.id,
@@ -32,8 +46,8 @@ router.post("/reservations", authMiddleware, async (req, res): Promise<void> => 
     specialRequests: reservation.specialRequests,
     status: reservation.status,
     listingName: listing?.name ?? null,
-    userName: null,
-    userPhone: null,
+    userName: user?.name ?? null,
+    userPhone: user?.phone ?? null,
     createdAt: reservation.createdAt.toISOString(),
   });
 });
