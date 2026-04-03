@@ -109,8 +109,11 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 ## Mobile App (Expo)
 
 - **Tabs**: Home (Discover feed: stat banner, categories, nearby, featured picks, top rated, popular joints, trending spots, quick bites, cafes & bakeries, upcoming events, recently added, partners), Search (autocomplete, category chips, sort filters, recent searches, search logging), Saved, Profile
-- **Vendor Dashboard**: Enhanced with view counts (total + unique), orders (total, today, weekly, monthly), reservations, rating/reviews, daily views/orders mini-charts, performance overview
-- **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
+- **Vendor Dashboard**: Enhanced with view counts (total + unique), orders (total, today, weekly, monthly), reservations, rating/reviews, daily views/orders mini-charts, performance overview, quick-action links to Menu & Events management
+- **Vendor Menu Management** (`vendor/menu`): Full CRUD for menu items (name, description, price, category, availability toggle, popular badge), grouped by category
+- **Vendor Event Management** (`vendor/events`): Full CRUD for events (title, description, dates, category, image URL), past/upcoming visual distinction
+- **Listing Detail Quick Order** (`listing/[slug]`): "Add to Order" buttons on menu items, inline quantity controls, floating cart bar (count + total), checkout modal sheet (pickup/delivery, delivery address, note, place order)
+- **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard/menu/events), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
 - **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`
 - **Tab bar**: NativeTabs with liquid glass (iOS 26+), classic BlurView Tabs fallback

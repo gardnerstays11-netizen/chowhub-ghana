@@ -155,10 +155,35 @@ export default function VendorDashboard() {
             </View>
           )}
 
+          <View style={styles.quickActions}>
+            <Pressable
+              onPress={() => router.push("/vendor/menu")}
+              style={({ pressed }) => [styles.quickAction, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <View style={[styles.qaIcon, { backgroundColor: colors.primary + "12" }]}>
+                <Feather name="book-open" size={18} color={colors.primary} />
+              </View>
+              <Text style={[styles.qaLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Manage Menu</Text>
+              <Text style={[styles.qaCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{menu?.length || 0} items</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/vendor/events")}
+              style={({ pressed }) => [styles.quickAction, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <View style={[styles.qaIcon, { backgroundColor: "#7c3aed12" }]}>
+                <Feather name="calendar" size={18} color="#7c3aed" />
+              </View>
+              <Text style={[styles.qaLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Manage Events</Text>
+              <Text style={[styles.qaCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Create & edit</Text>
+            </Pressable>
+          </View>
+
           <View style={[styles.menuSection, { borderColor: colors.border, borderRadius: colors.radius }]}>
             <View style={styles.menuHead}>
               <Text style={[styles.menuTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Menu Items</Text>
-              <Text style={[styles.menuCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{menu?.length || 0} items</Text>
+              <Pressable onPress={() => router.push("/vendor/menu")} hitSlop={8}>
+                <Text style={[styles.menuCount, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>View all →</Text>
+              </Pressable>
             </View>
             {menu && menu.length > 0 ? menu.slice(0, 5).map((item: any) => (
               <View key={item.id} style={[styles.menuRow, { borderTopColor: colors.border }]}>
@@ -166,7 +191,10 @@ export default function VendorDashboard() {
                 <Text style={[styles.menuItemPrice, { color: colors.primary, fontFamily: "Inter_600SemiBold" }]}>{item.price ? `GHS ${item.price}` : "—"}</Text>
               </View>
             )) : (
-              <Text style={[styles.emptyMenu, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No menu items yet</Text>
+              <Pressable onPress={() => router.push("/vendor/menu")} style={styles.addMenuPrompt}>
+                <Feather name="plus-circle" size={16} color={colors.primary} />
+                <Text style={[styles.addMenuText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>Add your first menu item</Text>
+              </Pressable>
             )}
           </View>
 
@@ -225,6 +253,13 @@ const styles = StyleSheet.create({
   menuRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   menuItemName: { fontSize: 14 },
   menuItemPrice: { fontSize: 14 },
+  quickActions: { flexDirection: "row", gap: 12, marginBottom: 16 },
+  quickAction: { flex: 1, borderWidth: 1, padding: 16, alignItems: "center", gap: 8 },
+  qaIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  qaLabel: { fontSize: 13 },
+  qaCount: { fontSize: 11 },
+  addMenuPrompt: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 14 },
+  addMenuText: { fontSize: 13 },
   emptyMenu: { paddingHorizontal: 16, paddingBottom: 16, fontSize: 13 },
   emptyText: { fontSize: 15 },
   btn: { paddingHorizontal: 32, paddingVertical: 12, marginTop: 8 },
