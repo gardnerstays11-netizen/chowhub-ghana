@@ -482,4 +482,55 @@ router.get("/listings/:id/views", async (req, res): Promise<void> => {
   });
 });
 
+router.get("/sitemap.xml", async (_req, res): Promise<void> => {
+  const listings = await db.select({
+    slug: listingsTable.slug,
+    createdAt: listingsTable.createdAt,
+  }).from(listingsTable).where(eq(listingsTable.status, "active"));
+
+  const baseUrl = "https://chowhub.gh";
+  const now = new Date().toISOString().split("T")[0];
+
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <lastmod>${now}</lastmod>
+  </url>
+  <url>
+    <loc>${baseUrl}/search</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/login</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/register</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>`;
+
+  for (const listing of listings) {
+    const lastmod = listing.createdAt ? new Date(listing.createdAt).toISOString().split("T")[0] : now;
+    xml += `
+  <url>
+    <loc>${baseUrl}/listings/${listing.slug}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>${lastmod}</lastmod>
+  </url>`;
+  }
+
+  xml += `
+</urlset>`;
+
+  res.header("Content-Type", "application/xml");
+  res.send(xml);
+});
+
 export default router;

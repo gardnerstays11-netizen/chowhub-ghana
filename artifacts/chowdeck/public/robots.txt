@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /dashboard
+
+Sitemap: https://chowhub.gh/api/sitemap.xml

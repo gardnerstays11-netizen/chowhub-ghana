@@ -5,16 +5,38 @@ import { Search, MapPin, ArrowRight, Navigation, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete, useGetPartners } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "@/components/listing-card";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
-const CATEGORIES = [
-  { name: "Local Chop Bars", slug: "chop_bar" },
-  { name: "Fine Dining", slug: "fine_dining" },
-  { name: "Cafes & Bakeries", slug: "cafe_bakery" },
-  { name: "Bars & Grills", slug: "bar_grill" },
-  { name: "Street Food", slug: "street_food" },
-  { name: "Seafood", slug: "seafood" },
+const API_BASE = (import.meta.env.BASE_URL?.replace(/\/$/, "") || "") + "/api";
+
+const FALLBACK_CATEGORIES = [
+  { id: "1", name: "Local Chop Bars", slug: "chop_bar", icon: "utensils" },
+  { id: "2", name: "Fine Dining", slug: "fine_dining", icon: "wine" },
+  { id: "3", name: "Cafes & Bakeries", slug: "cafe_bakery", icon: "coffee" },
+  { id: "4", name: "Bars & Grills", slug: "bar_grill", icon: "flame" },
+  { id: "5", name: "Street Food", slug: "street_food", icon: "shopping-bag" },
+  { id: "6", name: "Seafood", slug: "seafood", icon: "fish" },
+  { id: "7", name: "Fast Food", slug: "fast_food", icon: "zap" },
+  { id: "8", name: "Restaurants", slug: "restaurant", icon: "store" },
 ];
+
+function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/categories`);
+        if (!res.ok) return FALLBACK_CATEGORIES;
+        const data = await res.json();
+        return data.length > 0 ? data : FALLBACK_CATEGORIES;
+      } catch {
+        return FALLBACK_CATEGORIES;
+      }
+    },
+  });
+}
 
 function useGeolocation() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -65,6 +87,25 @@ export default function Home() {
   );
 
   const { data: partners } = useGetPartners();
+  const { data: categories } = useCategories();
+
+  usePageMeta({
+    title: "ChowHub Ghana — Discover the Best Restaurants & Food Spots",
+    description: "Find the best restaurants, chop bars, street food, and fine dining across Ghana. Browse by category, read reviews, and book tables on ChowHub.",
+    canonicalPath: "/",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "ChowHub Ghana",
+      url: "https://chowhub.gh",
+      description: "Ghana's premier food and dining discovery platform. Find restaurants, chop bars, street food, and fine dining across Accra, Kumasi, and beyond.",
+      areaServed: {
+        "@type": "Country",
+        name: "Ghana",
+      },
+      sameAs: [],
+    },
+  });
 
   const { data: suggestions } = useGetListingAutocomplete(
     { q: search, limit: 6 },
@@ -202,7 +243,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {CATEGORIES.map((cat) => (
+            {(categories || []).map((cat) => (
               <Link key={cat.slug} href={`/search?category=${cat.slug}`} className="group block">
                 <div className="border border-border rounded-lg px-4 py-5 text-center hover:border-primary/30 hover:bg-primary/[0.03] transition-colors">
                   <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{cat.name}</span>

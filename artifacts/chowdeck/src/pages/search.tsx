@@ -1,23 +1,41 @@
 import { MainLayout } from "@/components/layout";
 import { useSearchListings, useGetListingAutocomplete, useLogSearch } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "@/components/listing-card";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Search, X, MapPin, SlidersHorizontal, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePageMeta } from "@/hooks/use-page-meta";
+
+const API_BASE = (import.meta.env.BASE_URL?.replace(/\/$/, "") || "") + "/api";
+
+const FALLBACK_CATEGORIES = [
+  { id: "1", name: "Local Chop Bars", slug: "chop_bar", icon: "utensils" },
+  { id: "2", name: "Fine Dining", slug: "fine_dining", icon: "wine" },
+  { id: "3", name: "Cafes & Bakeries", slug: "cafe_bakery", icon: "coffee" },
+  { id: "4", name: "Bars & Grills", slug: "bar_grill", icon: "flame" },
+  { id: "5", name: "Street Food", slug: "street_food", icon: "shopping-bag" },
+  { id: "6", name: "Seafood", slug: "seafood", icon: "fish" },
+];
+
+function useCategories() {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/categories`);
+        if (!res.ok) return FALLBACK_CATEGORIES;
+        const data = await res.json();
+        return data.length > 0 ? data : FALLBACK_CATEGORIES;
+      } catch {
+        return FALLBACK_CATEGORIES;
+      }
+    },
+  });
+}
 
 const CITIES = ["Accra", "Kumasi", "Takoradi", "Tamale"];
-
-const CATEGORIES = [
-  { label: "Chop Bars", value: "chop_bar" },
-  { label: "Fine Dining", value: "fine_dining" },
-  { label: "Cafes & Bakeries", value: "cafe_bakery" },
-  { label: "Street Food", value: "street_food" },
-  { label: "Bars & Grills", value: "bar_grill" },
-  { label: "Seafood", value: "seafood" },
-  { label: "Restaurant", value: "restaurant" },
-  { label: "Fast Food", value: "fast_food" },
-];
 
 const CUISINES = [
   { label: "Ghanaian", value: "ghanaian" },
@@ -72,6 +90,15 @@ export default function SearchPage() {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data: categoriesData } = useCategories();
+
+  usePageMeta({
+    title: query
+      ? `"${query}" — Restaurant Search | ChowHub Ghana`
+      : "Search Restaurants & Food Spots in Ghana | ChowHub Ghana",
+    description: "Search and discover the best restaurants, chop bars, fast food joints, cafes, and street food spots across Ghana. Filter by cuisine, price, and location.",
+    canonicalPath: "/search",
+  });
   const autocompleteRef = useRef<HTMLDivElement>(null);
   const logSearchMut = useLogSearch();
   const searchLoggedRef = useRef<string>("");
@@ -235,8 +262,8 @@ export default function SearchPage() {
               </FilterSection>
 
               <FilterSection label="Category">
-                {CATEGORIES.map(c => (
-                  <FilterChip key={c.value} label={c.label} active={selectedCategory === c.value} onClick={() => toggleCategory(c.value)} />
+                {(categoriesData || []).map(c => (
+                  <FilterChip key={c.slug} label={c.name} active={selectedCategory === c.slug} onClick={() => toggleCategory(c.slug)} />
                 ))}
               </FilterSection>
 

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platf
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetPopularListings, useGetTrendingListings, useGetUpcomingEvents, useGetPartners, useGetTopRatedListings, useSearchListings } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { DiscoverCard } from "@/components/DiscoverCard";
 import { EventCard } from "@/components/EventCard";
 import { useRouter } from "expo-router";
@@ -9,14 +10,20 @@ import { useState, useCallback, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-const CATEGORIES = [
-  { key: "chop_bar", label: "Chop Bars", icon: "home" as const },
-  { key: "fine_dining", label: "Fine Dining", icon: "star" as const },
-  { key: "cafe_bakery", label: "Cafes", icon: "coffee" as const },
-  { key: "bar_grill", label: "Bars & Grills", icon: "sunset" as const },
-  { key: "street_food", label: "Street Food", icon: "truck" as const },
-  { key: "seafood", label: "Seafood", icon: "anchor" as const },
-  { key: "restaurant", label: "Restaurants", icon: "grid" as const },
+const ICON_MAP: Record<string, string> = {
+  utensils: "home", wine: "star", coffee: "coffee", flame: "sunset",
+  "shopping-bag": "truck", fish: "anchor", store: "grid", zap: "zap",
+  pizza: "disc", cake: "gift", beer: "droplet", leaf: "feather",
+};
+
+const FALLBACK_CATEGORIES = [
+  { slug: "chop_bar", name: "Chop Bars", icon: "utensils" },
+  { slug: "fine_dining", name: "Fine Dining", icon: "wine" },
+  { slug: "cafe_bakery", name: "Cafes", icon: "coffee" },
+  { slug: "bar_grill", name: "Bars & Grills", icon: "flame" },
+  { slug: "street_food", name: "Street Food", icon: "shopping-bag" },
+  { slug: "seafood", name: "Seafood", icon: "fish" },
+  { slug: "restaurant", name: "Restaurants", icon: "store" },
 ];
 
 function useGeolocation() {
@@ -116,6 +123,16 @@ export default function HomeScreen() {
   const { data: topRated, refetch: rtr } = useGetTopRatedListings({ limit: 10 });
   const { data: events, refetch: re } = useGetUpcomingEvents({ limit: 6 });
   const { data: partners } = useGetPartners();
+  const baseUrl = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+  const { data: apiCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch(`${baseUrl}/api/categories`);
+      if (!res.ok) return FALLBACK_CATEGORIES;
+      return res.json() as Promise<{ id: string; name: string; slug: string; icon: string }[]>;
+    },
+  });
+  const categories = (apiCategories && apiCategories.length > 0) ? apiCategories : FALLBACK_CATEGORIES;
   const { data: nearby, refetch: rn } = useGetNearbyListings(
     { lat: coords?.lat || 0, lng: coords?.lng || 0, radius: 10, limit: 8 },
     { query: { enabled: !!coords } as any }
@@ -163,19 +180,19 @@ export default function HomeScreen() {
       </LinearGradient>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <Pressable
-            key={cat.key}
-            onPress={() => router.push({ pathname: "/search", params: { category: cat.key } })}
+            key={cat.slug}
+            onPress={() => router.push({ pathname: "/search", params: { category: cat.slug } })}
             style={({ pressed }) => [
               styles.categoryChip,
               { backgroundColor: colors.card, opacity: pressed ? 0.85 : 1 },
             ]}
           >
             <View style={[styles.categoryIconWrap, { backgroundColor: colors.primary + "0D" }]}>
-              <Feather name={cat.icon} size={17} color={colors.primary} />
+              <Feather name={(ICON_MAP[cat.icon] || "grid") as any} size={17} color={colors.primary} />
             </View>
-            <Text style={[styles.categoryLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{cat.label}</Text>
+            <Text style={[styles.categoryLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{cat.name}</Text>
           </Pressable>
         ))}
       </ScrollView>

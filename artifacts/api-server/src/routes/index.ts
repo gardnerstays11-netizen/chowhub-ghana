@@ -14,11 +14,13 @@ import partnersRouter from "./partners";
 import storageRouter from "./storage";
 import eventsRouter from "./events";
 import siteSettingsRouter from "./site-settings";
+import categoriesRouter from "./categories";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(categoriesRouter);
 router.use(listingsRouter);
 router.use(menuRouter);
 router.use(reviewsRouter);

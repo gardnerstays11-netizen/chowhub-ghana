@@ -3,9 +3,10 @@ import { useGetListingBySlug, useGetListingMenu, useGetListingReviews, useCreate
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { MapPin, Star, Clock, Phone, MessageCircle, Heart, Share2, Navigation, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 export default function ListingDetail() {
   const { slug } = useParams();
@@ -26,6 +27,50 @@ export default function ListingDetail() {
   });
 
   const saveMutation = useSaveListing();
+
+  const priceMap: Record<string, string> = { "$": "$", "$$": "$$", "$$$": "$$$", "$$$$": "$$$$" };
+  const jsonLd = useMemo(() => {
+    if (!listing) return undefined;
+    const ld: Record<string, any> = {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": listing.name,
+      "description": listing.description,
+      "url": `https://chowhub.gh/listings/${listing.slug}`,
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": listing.address,
+        "addressLocality": listing.area,
+        "addressRegion": listing.city,
+        "addressCountry": "GH",
+      },
+      "servesCuisine": listing.cuisineType,
+      "priceRange": priceMap[listing.priceRange] || listing.priceRange,
+    };
+    if (listing.phone) ld.telephone = listing.phone;
+    if (listing.lat && listing.lng) {
+      ld.geo = { "@type": "GeoCoordinates", latitude: listing.lat, longitude: listing.lng };
+    }
+    if (listing.coverPhoto) ld.image = listing.coverPhoto;
+    if (listing.averageRating && listing.totalReviews) {
+      ld.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: listing.averageRating,
+        reviewCount: listing.totalReviews,
+        bestRating: 5,
+      };
+    }
+    if (listing.acceptsReservations) ld.acceptsReservations = "True";
+    return ld;
+  }, [listing]);
+
+  usePageMeta({
+    title: listing ? `${listing.name} — ${listing.area}, ${listing.city} | ChowHub Ghana` : "ChowHub Ghana",
+    description: listing ? `${listing.name} in ${listing.area}, ${listing.city}. ${listing.cuisineType?.join(", ")} cuisine. ${listing.description?.slice(0, 120)}` : undefined,
+    canonicalPath: listing ? `/listings/${listing.slug}` : undefined,
+    ogImage: listing?.coverPhoto || undefined,
+    jsonLd,
+  });
 
   const getDirectionsUrl = () => {
     if (!listing) return "#";

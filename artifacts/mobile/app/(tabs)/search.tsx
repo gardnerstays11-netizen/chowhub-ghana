@@ -2,20 +2,25 @@ import { View, Text, StyleSheet, TextInput, FlatList, ActivityIndicator, Platfor
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useSearchListings, useGetListingAutocomplete, useLogSearch } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "@/components/ListingCard";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const CATEGORIES = [
-  { label: "All", value: "", icon: "grid" as const },
-  { label: "Chop Bars", value: "chop_bar", icon: "home" as const },
-  { label: "Fine Dining", value: "fine_dining", icon: "star" as const },
-  { label: "Cafes", value: "cafe_bakery", icon: "coffee" as const },
-  { label: "Street Food", value: "street_food", icon: "truck" as const },
-  { label: "Bars & Grills", value: "bar_grill", icon: "sunset" as const },
-  { label: "Seafood", value: "seafood", icon: "anchor" as const },
+const ICON_MAP: Record<string, string> = {
+  utensils: "home", wine: "star", coffee: "coffee", flame: "sunset",
+  "shopping-bag": "truck", fish: "anchor", store: "grid", zap: "zap",
+};
+
+const FALLBACK_CATEGORIES = [
+  { slug: "chop_bar", name: "Chop Bars", icon: "utensils" },
+  { slug: "fine_dining", name: "Fine Dining", icon: "wine" },
+  { slug: "cafe_bakery", name: "Cafes", icon: "coffee" },
+  { slug: "bar_grill", name: "Bars & Grills", icon: "flame" },
+  { slug: "street_food", name: "Street Food", icon: "shopping-bag" },
+  { slug: "seafood", name: "Seafood", icon: "fish" },
 ];
 
 const SORT_OPTIONS = [
@@ -43,6 +48,23 @@ export default function SearchScreen() {
   const isWeb = Platform.OS === "web";
   const logSearchMut = useLogSearch();
   const searchLoggedRef = useRef<string>("");
+
+  const baseUrl = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+  const { data: apiCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch(`${baseUrl}/api/categories`);
+      if (!res.ok) return FALLBACK_CATEGORIES;
+      return res.json() as Promise<{ slug: string; name: string; icon: string }[]>;
+    },
+  });
+  const categoryList = useMemo(() => {
+    const items = (apiCategories && apiCategories.length > 0) ? apiCategories : FALLBACK_CATEGORIES;
+    return [
+      { slug: "", name: "All", icon: "store" },
+      ...items,
+    ];
+  }, [apiCategories]);
 
   useEffect(() => {
     loadRecentSearches();
@@ -164,15 +186,15 @@ export default function SearchScreen() {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={CATEGORIES}
-            keyExtractor={(item) => item.value || "all"}
+            data={categoryList}
+            keyExtractor={(item) => item.slug || "all"}
             contentContainerStyle={{ gap: 8 }}
             style={{ flex: 1 }}
             renderItem={({ item }) => {
-              const active = selectedCategory === item.value;
+              const active = selectedCategory === item.slug;
               return (
                 <Pressable
-                  onPress={() => setSelectedCategory(prev => prev === item.value ? "" : item.value)}
+                  onPress={() => setSelectedCategory(prev => prev === item.slug ? "" : item.slug)}
                   style={[
                     styles.chip,
                     {
@@ -181,11 +203,11 @@ export default function SearchScreen() {
                     },
                   ]}
                 >
-                  <Feather name={item.icon} size={12} color={active ? "#fff" : colors.mutedForeground} style={{ marginRight: 5 }} />
+                  <Feather name={(ICON_MAP[item.icon] || "grid") as any} size={12} color={active ? "#fff" : colors.mutedForeground} style={{ marginRight: 5 }} />
                   <Text style={[styles.chipText, {
                     color: active ? "#fff" : colors.foreground,
                     fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
-                  }]}>{item.label}</Text>
+                  }]}>{item.name}</Text>
                 </Pressable>
               );
             }}

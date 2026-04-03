@@ -43,6 +43,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `orders` — Food orders (delivery/pickup)
 - `saved_places` — User saved/bookmarked listings
 - `subscriptions` — Vendor subscription records
+- `categories` — Admin-managed food categories (name, slug, icon, sortOrder, active) — used on home and search pages
 - `search_logs` — Search query logs for analytics (query, city, category, filters, resultsCount, userId, sessionId)
 - `partners` — Partner logos for homepage display (name, logoUrl, website, sortOrder, active)
 - `vendor_events` — Vendor events for discovery feed (title, description, eventDate, endDate, imageUrl, category, listingId, vendorId)
@@ -61,6 +62,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - Orders: `/orders`, `/orders/mine`
 - Saved: `/saved`, `/saved/:listingId`
 - Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos`, `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats`
+- Categories: `GET /categories` (public active list), `GET/POST/PUT/DELETE /admin/categories`
 - Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`, `/admin/search-analytics`, `/admin/partners`
 - Partners: `GET /partners` (public active list), `POST/PUT/DELETE /admin/partners`
 - Storage: `POST /storage/uploads/request-url`, `GET /storage/objects/*`
@@ -68,6 +70,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - Listing Views: `POST /listings/:slug/view` (track view), `GET /listings/:id/views` (view analytics)
 - Subscription Packages: `GET/POST /admin/subscription-packages`, `PUT/DELETE /admin/subscription-packages/:id`
 - Platform Analytics: `GET /admin/platform-analytics` (page views, top listings, daily trends)
+- Sitemap: `GET /sitemap.xml` (dynamic sitemap for SEO)
 
 ### Design System
 - **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
@@ -110,6 +113,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation) — uses shared AdminLayout
 - `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage) — uses shared AdminLayout
 - `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links) — uses shared AdminLayout
+- `/admin/categories` — Category management (add, edit, delete, toggle active, reorder) — uses shared AdminLayout
 - `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits) — uses shared AdminLayout
 
 ## Mobile App (Expo)
@@ -124,6 +128,15 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`
 - **Tab bar**: NativeTabs with liquid glass (iOS 26+), classic BlurView Tabs fallback
 - **Design**: Same color palette as web (deep green/amber/cream), Inter font throughout
+
+## SEO
+
+- **Meta tags**: Comprehensive static meta tags in `index.html` (title, description, OG, Twitter Card) targeting Ghana food searches
+- **robots.txt**: `public/robots.txt` allows all crawlers, references sitemap
+- **Sitemap**: Dynamic `GET /api/sitemap.xml` endpoint generates XML sitemap from all active listings
+- **usePageMeta hook**: `src/hooks/use-page-meta.ts` sets per-page title, description, OG tags, canonical URL, and JSON-LD
+- **JSON-LD**: Organization schema on homepage, Restaurant schema on listing detail pages
+- **Canonical URLs**: Set per-page via `usePageMeta({ canonicalPath: "/..." })`
 
 ## Vite Proxy
 
