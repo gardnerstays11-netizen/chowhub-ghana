@@ -22,6 +22,7 @@ import VendorEvents from "@/pages/vendor/events";
 import VendorPhotos from "@/pages/vendor/photos";
 import VendorReviews from "@/pages/vendor/reviews";
 import VendorAnalytics from "@/pages/vendor/analytics";
+import VendorSettings from "@/pages/vendor/settings";
 
 // Admin
 import AdminLogin from "@/pages/admin/login";
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/vendor/photos" component={VendorPhotos} />
       <Route path="/vendor/reviews" component={VendorReviews} />
       <Route path="/vendor/analytics" component={VendorAnalytics} />
+      <Route path="/vendor/settings" component={VendorSettings} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />

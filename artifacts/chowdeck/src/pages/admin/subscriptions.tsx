@@ -2,11 +2,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useLocation, Link } from "wouter";
 import { useEffect, useState } from "react";
-import { Store, MapPin, Users, LogOut, Image, Plus, Pencil, Trash2, Check, X, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import AdminLayout from "@/components/AdminLayout";
 
 const API_BASE = (import.meta.env.BASE_URL?.replace(/\/$/, "") || "") + "/api";
 
@@ -34,8 +33,7 @@ const emptyPackage: Omit<SubPackage, "id"> = {
 };
 
 export default function AdminSubscriptions() {
-  const { isAdminAuthenticated, logout, token: adminToken } = useAuth();
-  const [, setLocation] = useLocation();
+  const { isAdminAuthenticated, token: adminToken } = useAuth();
   const { toast } = useToast();
   const [packages, setPackages] = useState<SubPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,10 +43,8 @@ export default function AdminSubscriptions() {
   const [featureInput, setFeatureInput] = useState("");
 
   useEffect(() => {
-    if (!isAdminAuthenticated) {
-      setLocation("/admin/login");
-    }
-  }, [isAdminAuthenticated, setLocation]);
+    if (!isAdminAuthenticated) return;
+  }, [isAdminAuthenticated]);
 
   const fetchPackages = async () => {
     try {
@@ -130,62 +126,15 @@ export default function AdminSubscriptions() {
   };
 
   return (
-    <div className="min-h-screen flex bg-zinc-50">
-      <aside className="w-64 bg-zinc-950 text-white shrink-0 flex flex-col h-screen sticky top-0">
-        <div className="p-6 border-b border-zinc-800">
-          <h2 className="font-sans font-bold text-xl tracking-tight">ChowHub Admin</h2>
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-            Overview
-          </Link>
-          <Link href="/admin/partners" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <Image className="w-5 h-5" />
-            Partners
-          </Link>
-          <Link href="/admin/vendors" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <Store className="w-5 h-5" />
-            Vendors
-          </Link>
-          <Link href="/admin/listings" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <MapPin className="w-5 h-5" />
-            Listings
-          </Link>
-          <Link href="/admin/users" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <Users className="w-5 h-5" />
-            Users
-          </Link>
-          <Link href="/admin/subscriptions" className="flex items-center gap-3 px-4 py-3 bg-white/10 rounded-xl text-white font-medium">
-            <Package className="w-5 h-5" />
-            Subscriptions
-          </Link>
-          <Link href="/admin/settings" className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl text-zinc-400 hover:text-white font-medium transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            Site Settings
-          </Link>
-        </nav>
-        <div className="p-4 border-t border-zinc-800">
-          <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/5" onClick={() => { logout(); setLocation("/admin/login"); }}>
-            <LogOut className="w-5 h-5 mr-3" />
-            Sign Out
-          </Button>
-        </div>
-      </aside>
+    <AdminLayout title="Subscription Packages">
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-zinc-500">Manage vendor subscription plans and pricing</p>
+        <Button onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyPackage); }} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Add Package
+        </Button>
+      </div>
 
-      <main className="flex-1 min-h-screen">
-        <div className="bg-white border-b border-zinc-200 px-8 py-6 flex items-center justify-between sticky top-0 z-10">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Subscription Packages</h1>
-            <p className="text-sm text-zinc-500 mt-1">Manage vendor subscription plans and pricing</p>
-          </div>
-          <Button onClick={() => { setShowCreate(true); setEditingId(null); setForm(emptyPackage); }} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Package
-          </Button>
-        </div>
-
-        <div className="p-8">
           {showCreate && (
             <Card className="mb-8 border-2 border-amber-200">
               <CardContent className="p-6 space-y-4">
@@ -382,8 +331,6 @@ export default function AdminSubscriptions() {
               ))}
             </div>
           )}
-        </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

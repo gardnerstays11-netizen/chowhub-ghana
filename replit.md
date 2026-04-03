@@ -94,8 +94,8 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 ## Frontend Pages
 
 - `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings, "Meet Our Partners" section)
-- `/search` — Search/browse with autocomplete, live filtering (city, category chips), search logging
-- `/listings/:slug` — Listing detail (description, menu, hours, Call Now, WhatsApp)
+- `/search` — Advanced search/browse with autocomplete, filters (cuisine type, price range, dining style, reservations/orders), sort (highest rated, most reviewed, newest, featured, price), search logging
+- `/listings/:slug` — Listing detail (description, menu grouped by category, hours, Call Now, WhatsApp, Get Directions via Google Maps)
 - `/login`, `/register` — User auth
 - `/dashboard` — User dashboard (reservations, orders, saved, reviews)
 - `/vendor/login`, `/vendor/register` — Vendor auth
@@ -105,11 +105,12 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/vendor/photos` — Photo Gallery (grid view with hover delete)
 - `/vendor/reviews` — Customer Reviews (read-only with sub-ratings)
 - `/vendor/analytics` — Analytics (daily view/order bar charts + stat cards)
+- `/vendor/settings` — Vendor Settings (toggle acceptsReservations and acceptsOrders for listing)
 - `/admin/login` — Admin login
-- `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation)
-- `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage)
-- `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links)
-- `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits)
+- `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation) — uses shared AdminLayout
+- `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage) — uses shared AdminLayout
+- `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links) — uses shared AdminLayout
+- `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits) — uses shared AdminLayout
 
 ## Mobile App (Expo)
 

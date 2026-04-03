@@ -1,0 +1,453 @@
+Build a full-stack food and dining discovery platform for the Ghanaian 
+market called [APP_NAME]. It is a platform where users can find every 
+type of food and dining establishment across Ghana — restaurants, fine 
+dining, breakfast spots, brunch spots, chop bars, bars, lounges, cafes, 
+bakeries, food stalls, fast food joints, hotel dining, buffets, 
+rooftop dining, pop-ups, and more.
+
+Users can discover places near them, view full listings, make 
+reservations, place orders, and contact businesses directly via 
+phone, website, WhatsApp, or social media.
+
+There is no payment processing on the platform for now. All contact 
+and transactions happen directly between the user and the business.
+
+Choose the best modern tech stack for this project. Pick technologies 
+that are production ready, best suited for a discovery/listing platform 
+with maps, filters, and SEO, scalable, easy to deploy, and good for 
+both web and mobile. Document your tech stack choices in the README.
+
+---
+
+## DATABASE SCHEMA
+
+### users
+- id (uuid, primary key)
+- name (string)
+- email (string, unique)
+- phone (string)
+- password (hashed)
+- city (string)
+- created_at (timestamp)
+
+### vendors
+- id (uuid, primary key)
+- business_name (string)
+- owner_name (string)
+- email (string, unique)
+- phone (string)
+- whatsapp (string)
+- password (hashed)
+- status (enum: pending, approved, rejected)
+- rejection_reason (string, nullable)
+- plan (enum: free, premium)
+- plan_expires_at (timestamp, nullable)
+- onboarding_completed (boolean, default false)
+- onboarding_step (integer, default 1)
+- created_at (timestamp)
+
+### listings
+- id (uuid, primary key)
+- vendor_id (foreign key → vendors)
+- name (string)
+- slug (string, unique)
+- description (text)
+- category (enum: restaurant, fine_dining, breakfast_brunch,
+    chop_bar, bar_lounge, rooftop_bar, cafe_bakery, fast_food,
+    food_stall, buffet, hotel_dining, dessert_drinks, pop_up,
+    food_court)
+- hotel_name (string, nullable) — for hotel_dining only
+- cuisine_type (array of strings)
+- dining_style (enum: casual, formal, fine_dining, buffet,
+    self_service, takeaway, delivery, dine_in_only, nullable)
+- meal_period (array of strings)
+- price_range (enum: budget, moderate, upscale, luxury)
+- price_per_person (float, nullable) — for buffet only
+- city (enum: accra, kumasi, takoradi, tamale)
+- area (string)
+- neighbourhood (string)
+- address (string)
+- landmark (string)
+- lat (float)
+- lng (float)
+- phone (string)
+- phone_2 (string, nullable)
+- whatsapp (string)
+- website (string, nullable)
+- instagram (string, nullable)
+- twitter (string, nullable)
+- facebook (string, nullable)
+- tiktok (string, nullable)
+- opening_hours (JSON)
+- hours_vary (boolean, default false) — for food stalls
+- event_dates (JSON, nullable) — for pop-ups
+- temporary_location (string, nullable) — for pop-ups
+- features (array of strings)
+- dress_code (enum: casual, smart_casual, formal, none, nullable)
+- is_18_plus (boolean, default false)
+- accepts_reservations (boolean)
+- accepts_orders (boolean)
+- buffet_description (text, nullable) — for buffet only
+- stalls_description (text, nullable) — for food court only
+- average_rating (float)
+- total_reviews (integer)
+- is_featured (boolean, default false)
+- is_verified (boolean, default false)
+- meta_title (string)
+- meta_description (string)
+- status (enum: active, inactive, pending)
+- created_at (timestamp)
+
+### listing_photos
+- id (uuid)
+- listing_id (foreign key → listings)
+- url (string)
+- is_cover (boolean)
+- display_order (integer)
+
+### menu_items
+- id (uuid)
+- listing_id (foreign key → listings)
+- name (string)
+- description (string)
+- price (float, nullable)
+- category (string)
+- photo_url (string, nullable)
+- is_available (boolean, default true)
+- is_popular (boolean, default false)
+
+### reservations
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- date (date)
+- time (string)
+- party_size (integer)
+- occasion (string, nullable)
+- special_requests (text, nullable)
+- status (enum: pending, confirmed, declined)
+- created_at (timestamp)
+
+### orders
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- items (JSON)
+- order_type (enum: delivery, pickup, dine_in)
+- delivery_address (string, nullable)
+- note (text, nullable)
+- status (enum: pending, confirmed, rejected, completed)
+- created_at (timestamp)
+
+### reviews
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- rating (integer, 1-5)
+- food_rating (integer, 1-5)
+- service_rating (integer, 1-5)
+- ambience_rating (integer, 1-5)
+- value_rating (integer, 1-5)
+- comment (text)
+- visited_for (string)
+- created_at (timestamp)
+
+### saved_places
+- id (uuid)
+- user_id (foreign key → users)
+- listing_id (foreign key → listings)
+- created_at (timestamp)
+
+### subscriptions
+- id (uuid)
+- vendor_id (foreign key → vendors)
+- plan (enum: free, premium)
+- start_date (timestamp)
+- end_date (timestamp)
+- status (enum: active, expired, cancelled)
+
+---
+
+## VENDOR SIGNUP & DYNAMIC ONBOARDING
+
+### Signup page (/vendor/signup)
+Collect only:
+- Business name
+- Owner/manager full name
+- Phone number (primary contact)
+- Email address
+- Password
+- City (dropdown: Accra, Kumasi, Takoradi, Tamale)
+
+After submission:
+- Send OTP to phone number for verification
+- On OTP verified: create vendor account, 
+  status = pending, redirect to onboarding
+- Show clear message: "Your account is created. 
+  Complete your listing to go live."
+
+### Onboarding flow (/vendor/onboarding)
+Show a progress bar across all steps.
+Save progress after every step so vendor can 
+return and continue if they close the app.
+Use encouraging, plain language throughout.
+Show contextual tips on each step.
+
+---
+
+## STEP 1 — Business details
+
+Fields shown to ALL categories:
+- Business category (required) — selecting this 
+  triggers dynamic form behaviour for all steps
+- Short description (max 300 characters)
+  Tip: "Tell customers what makes your place special"
+
+Fields shown based on category selection:
+
+CUISINE TYPE (multi-select) — show for:
+  restaurant, fine_dining, breakfast_brunch,
+  bar_lounge, rooftop_bar, fast_food, food_stall,
+  buffet, hotel_dining, pop_up, food_court
+  Hide for: cafe_bakery, dessert_drinks, chop_bar
+  Pre-select for chop_bar: Ghanaian, West African
+  Options: Ghanaian, West African, Continental, Chinese,
+  Lebanese, Indian, Italian, American, Japanese,
+  Mediterranean, Mexican, Thai, Turkish, Fusion
+
+DINING STYLE — show for:
+  restaurant, fine_dining, hotel_dining, buffet
+  Hide for all others
+  Options: Casual, Formal, Fine Dining, Buffet,
+  Self Service, Takeaway, Dine-in Only, Delivery
+
+MEAL PERIODS (multi-select) — show for all categories
+  Pre-select based on category:
+  - breakfast_brunch: Breakfast, Brunch (others hidden)
+  - bar_lounge, rooftop_bar: Dinner, Late Night
+  - cafe_bakery: Breakfast, Brunch, Lunch
+  - fast_food: All Day, Lunch, Dinner
+  - dessert_drinks: All Day, Late Night
+  Options: Breakfast, Brunch, Lunch, Dinner, 
+  All Day, Late Night
+
+PRICE RANGE — show for all categories
+  For buffet: show additional "price per person" 
+  field in GHS
+  Pre-select for:
+  - chop_bar: Budget, Moderate
+  - fast_food, food_stall: Budget
+  Options with GHS amounts:
+  Budget (GHS 0-50), Moderate (GHS 50-150),
+  Upscale (GHS 150-300), Luxury (GHS 300+)
+
+HOTEL NAME — show only for: hotel_dining
+
+YEAR ESTABLISHED — show for all (optional)
+
+Show category-specific messages:
+- fine_dining: "Fine dining listings require a dress 
+  code and reservation policy to be set before approval"
+- food_stall: "No website or social media? No problem. 
+  A phone number is all you need to get started"
+- bar_lounge, rooftop_bar: Show 18+ venue toggle
+- pop_up: "Pop-up listings are temporary. You can 
+  update your event dates anytime from your dashboard"
+- chop_bar: Show all price amounts prominently in GHS
+
+---
+
+## STEP 2 — Location
+
+Fields shown to ALL categories:
+- Street address or area description
+- City (pre-filled from signup)
+- Neighbourhood (dropdown based on city:
+    Accra: Osu, East Legon, Labone, Airport Residential,
+    Cantonments, Dzorwulu, Spintex, Tema, Adenta, Haatso,
+    Accra Central, Dansoman, Lapaz, Madina
+    Kumasi: Adum, Asokwa, Nhyiaeso, Bantama, Suame
+    Takoradi: Harbour Area, Market Circle, Anaji, Effia
+    Tamale: Central Tamale, Kalpohin, Lamashegu, Choggu)
+- Landmark (very prominent field)
+  Tip: "Most customers use landmarks to find you. 
+  Example: Opposite Accra Mall, Near Kotoka roundabout"
+- Google Maps pin drop to confirm exact location
+  With fallback: "Can't find it on map? Skip and 
+  our team will confirm your location"
+
+Fields shown based on category:
+
+TEMPORARY LOCATION — show only for: pop_up
+  Label: "Where will your pop-up be located?"
+
+---
+
+## STEP 3 — Contact & social media
+
+Fields shown to ALL categories:
+- Phone number (pre-filled from signup)
+- Second phone number (optional)
+- WhatsApp number (optional, can match phone)
+  Tip: "Most customers in Ghana prefer WhatsApp. 
+  Add it to get more inquiries"
+
+Fields shown to ALL (all optional):
+- Website URL
+- Instagram handle
+- Facebook page
+- TikTok handle
+- Twitter/X handle
+
+Tip shown to all: "You don't need a website. 
+WhatsApp and Instagram are enough to get started"
+
+---
+
+## STEP 4 — Opening hours
+
+Fields shown to ALL categories except food_stall 
+and pop_up:
+- Per day: toggle open/closed + open time + close time
+- "Same hours every day" toggle to fill all days at once
+- Public holidays: separate note field
+
+For food_stall:
+- Replace with "My hours vary" toggle
+- If unchecked: show normal day-by-day hours
+- If checked: show text field "Describe when you 
+  are usually open"
+  Tip: "Street vendors — just give customers a 
+  general idea of when to find you"
+
+For pop_up:
+- Replace opening hours with event dates
+- Start date, end date
+- Daily open and close time
+- Option to add multiple event dates
+
+---
+
+## STEP 5 — Features & amenities
+
+Show a checklist. Items shown depend on category.
+
+Show for ALL categories:
+- Takeaway Available
+- Delivery Available
+- Parking
+- Wheelchair Accessible
+
+Show based on category:
+
+OUTDOOR SEATING — hide for: food_court, buffet
+AC (Air Conditioning) — hide for: food_stall, pop_up
+WIFI — hide for: food_stall, pop_up, chop_bar
+LIVE MUSIC — show for: bar_lounge, rooftop_bar, 
+  restaurant, fine_dining, hotel_dining
+ROOFTOP — pre-tick and lock for: rooftop_bar
+  Show toggle for: bar_lounge, hotel_dining, restaurant
+SEA VIEW — show for: rooftop_bar, bar_lounge, 
+  hotel_dining, restaurant
+POOL SIDE — show for: hotel_dining, bar_lounge, 
+  rooftop_bar
+PRIVATE DINING ROOM — show for: restaurant, 
+  fine_dining, hotel_dining
+KIDS FRIENDLY — hide for: bar_lounge, rooftop_bar, 
+  dessert_drinks
+SPORTS VIEWING — show for: bar_lounge, rooftop_bar, 
+  fast_food, restaurant
+SHISHA — show for: bar_lounge, rooftop_bar, 
+  restaurant, hotel_dining
+HALAL — show for all
+VEGAN OPTIONS — show for all
+BYOB — show for: bar_lounge, rooftop_bar, restaurant
+GARDEN SEATING — show for: restaurant, fine_dining, 
+  hotel_dining, cafe_bakery
+RESERVATIONS REQUIRED — show for: fine_dining, 
+  restaurant, hotel_dining, buffet
+
+DRESS CODE — show for:
+  fine_dining (required), restaurant, bar_lounge,
+  rooftop_bar, hotel_dining, buffet
+  Hide for: chop_bar, fast_food, food_stall, 
+  cafe_bakery, dessert_drinks, pop_up, food_court,
+  breakfast_brunch
+  Options: Casual, Smart Casual, Formal, No Dress Code
+
+ACCEPTS RESERVATIONS toggle:
+  Show for: restaurant, fine_dining, hotel_dining,
+  buffet, bar_lounge, rooftop_bar, breakfast_brunch,
+  pop_up
+  Hide for: chop_bar, fast_food, food_stall, 
+  cafe_bakery, dessert_drinks, food_court
+  Pre-tick and make required for: fine_dining
+
+ACCEPTS ORDERS toggle:
+  Show for: restaurant, chop_bar, fast_food, 
+  food_stall, cafe_bakery, dessert_drinks, bar_lounge,
+  rooftop_bar, hotel_dining, pop_up, food_court
+  Hide for: fine_dining, buffet
+
+18+ VENUE toggle:
+  Show for: bar_lounge, rooftop_bar only
+
+---
+
+## STEP 6 — Photos
+
+Fields shown to ALL categories:
+- Cover photo upload (required — minimum 1)
+- Gallery photos:
+  Free plan: up to 5 photos
+  Premium plan: unlimited
+- On mobile: option to take photo directly from camera
+
+Tips shown to all:
+- "Use bright clear photos taken in daylight"
+- "Show your food, your space, and your people"
+- "Listings with photos get 3x more views"
+
+Category-specific photo tips:
+- fine_dining: "Show your plating, table setting, 
+  and ambience — first impressions matter"
+- chop_bar: "Show the food clearly — customers want 
+  to see what they are eating"
+- bar_lounge, rooftop_bar: "Show the view, the vibe, 
+  and the crowd"
+- cafe_bakery: "Bright natural light photos of your 
+  pastries and coffee work best"
+- food_stall: "A clear photo of you and your food 
+  builds trust with customers"
+
+---
+
+## STEP 7 — Menu
+
+For most categories:
+- Add menu items one by one:
+  - Item name (required)
+  - Menu category (Starters, Mains, Drinks, 
+    Desserts, Sides, Breakfast, Pastries, Specials)
+  - Price in GHS (optional)
+  - Short description (optional)
+  - Photo (optional)
+  - Mark as popular toggle
+- Can add multiple items
+- Can skip entirely and add later from dashboard
+
+Category-specific menu behaviour:
+
+For buffet:
+- Hide individual menu items
+- Show text field: "What is typically on your buffet?"
+- Show average price per person field
+
+For food_court:
+- Hide individual menu items  
+- Show text field: "List your main stalls or food 
+  sections" (e.g. "Chinese corner, Ghanaian dishes, 
+  Fresh juice bar, Pizza station")
+
+For fine_dining:
+- Make prices required on all menu items

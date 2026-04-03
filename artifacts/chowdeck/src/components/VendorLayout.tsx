@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
 import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, BookOpen, Calendar, Image, Star, BarChart3 } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, Calendar, Image, Star, BarChart3, Settings } from "lucide-react";
 
 const navItems = [
   { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/vendor/photos", label: "Photos", icon: Image },
   { href: "/vendor/reviews", label: "Reviews", icon: Star },
   { href: "/vendor/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/vendor/settings", label: "Settings", icon: Settings },
 ];
 
 export default function VendorLayout({ children }: { children: ReactNode }) {

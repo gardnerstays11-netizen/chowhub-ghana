@@ -3,10 +3,11 @@ import { useSearchListings, useGetListingAutocomplete, useLogSearch } from "@wor
 import { ListingCard } from "@/components/listing-card";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
-import { Search, X, MapPin, SlidersHorizontal } from "lucide-react";
+import { Search, X, MapPin, SlidersHorizontal, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 const CITIES = ["Accra", "Kumasi", "Takoradi", "Tamale"];
+
 const CATEGORIES = [
   { label: "Chop Bars", value: "chop_bar" },
   { label: "Fine Dining", value: "fine_dining" },
@@ -16,6 +17,39 @@ const CATEGORIES = [
   { label: "Seafood", value: "seafood" },
   { label: "Restaurant", value: "restaurant" },
   { label: "Fast Food", value: "fast_food" },
+];
+
+const CUISINES = [
+  { label: "Ghanaian", value: "ghanaian" },
+  { label: "Nigerian", value: "nigerian" },
+  { label: "Chinese", value: "chinese" },
+  { label: "Indian", value: "indian" },
+  { label: "Italian", value: "italian" },
+  { label: "Lebanese", value: "lebanese" },
+  { label: "Continental", value: "continental" },
+  { label: "American", value: "american" },
+];
+
+const PRICE_RANGES = [
+  { label: "$", value: "$" },
+  { label: "$$", value: "$$" },
+  { label: "$$$", value: "$$$" },
+  { label: "$$$$", value: "$$$$" },
+];
+
+const SORT_OPTIONS = [
+  { label: "Most Relevant", value: "" },
+  { label: "Highest Rated", value: "highest_rated" },
+  { label: "Most Reviewed", value: "most_reviewed" },
+  { label: "Newest", value: "newest" },
+  { label: "Featured", value: "featured" },
+];
+
+const DINING_STYLES = [
+  { label: "Casual", value: "casual" },
+  { label: "Fine Dining", value: "fine_dining" },
+  { label: "Fast Casual", value: "fast_casual" },
+  { label: "Buffet", value: "buffet" },
 ];
 
 export default function SearchPage() {
@@ -29,6 +63,12 @@ export default function SearchPage() {
   const [debouncedSearch, setDebouncedSearch] = useState(query);
   const [selectedCity, setSelectedCity] = useState(cityParam);
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedCuisine, setSelectedCuisine] = useState("");
+  const [selectedPrice, setSelectedPrice] = useState("");
+  const [selectedSort, setSelectedSort] = useState("");
+  const [selectedDiningStyle, setSelectedDiningStyle] = useState("");
+  const [acceptsReservations, setAcceptsReservations] = useState(false);
+  const [acceptsOrders, setAcceptsOrders] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +90,12 @@ export default function SearchPage() {
     q: debouncedSearch || undefined,
     city: selectedCity || undefined,
     category: selectedCategory || undefined,
+    cuisine_type: selectedCuisine || undefined,
+    price_range: selectedPrice || undefined,
+    dining_style: selectedDiningStyle || undefined,
+    sort: (selectedSort || undefined) as any,
+    accepts_reservations: acceptsReservations ? "true" : undefined,
+    accepts_orders: acceptsOrders ? "true" : undefined,
     limit: 30,
   });
 
@@ -88,30 +134,37 @@ export default function SearchPage() {
     setLocation(`/listings/${slug}`);
   };
 
-  const toggleCity = (city: string) => {
-    setSelectedCity(prev => prev === city ? "" : city);
-  };
-
-  const toggleCategory = (cat: string) => {
-    setSelectedCategory(prev => prev === cat ? "" : cat);
-  };
+  const toggleCity = (city: string) => setSelectedCity(prev => prev === city ? "" : city);
+  const toggleCategory = (cat: string) => setSelectedCategory(prev => prev === cat ? "" : cat);
+  const toggleCuisine = (c: string) => setSelectedCuisine(prev => prev === c ? "" : c);
+  const togglePrice = (p: string) => setSelectedPrice(prev => prev === p ? "" : p);
+  const toggleDiningStyle = (d: string) => setSelectedDiningStyle(prev => prev === d ? "" : d);
 
   const clearFilters = () => {
     setSelectedCity("");
     setSelectedCategory("");
+    setSelectedCuisine("");
+    setSelectedPrice("");
+    setSelectedSort("");
+    setSelectedDiningStyle("");
+    setAcceptsReservations(false);
+    setAcceptsOrders(false);
     setSearch("");
     setDebouncedSearch("");
   };
 
-  const activeFilterCount = (selectedCity ? 1 : 0) + (selectedCategory ? 1 : 0);
+  const activeFilterCount =
+    (selectedCity ? 1 : 0) + (selectedCategory ? 1 : 0) + (selectedCuisine ? 1 : 0) +
+    (selectedPrice ? 1 : 0) + (selectedDiningStyle ? 1 : 0) +
+    (acceptsReservations ? 1 : 0) + (acceptsOrders ? 1 : 0);
 
   return (
     <MainLayout>
-      <div className="border-b border-border py-6">
-        <div className="container mx-auto px-4">
+      <div className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-lg" ref={autocompleteRef}>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative flex-1 max-w-xl" ref={autocompleteRef}>
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 ref={inputRef}
                 value={search}
@@ -120,11 +173,11 @@ export default function SearchPage() {
                   setShowAutocomplete(true);
                 }}
                 onFocus={() => search.length >= 2 && setShowAutocomplete(true)}
-                placeholder="Search restaurants, cuisines, dishes..."
-                className="pl-9 pr-9 h-11 bg-card border-border"
+                placeholder="Search by restaurant, dish, or cuisine..."
+                className="pl-10 pr-10 h-11 bg-background border-border text-sm"
               />
               {search && (
-                <button onClick={() => { setSearch(""); setDebouncedSearch(""); setShowAutocomplete(false); }} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <button onClick={() => { setSearch(""); setDebouncedSearch(""); setShowAutocomplete(false); }} className="absolute right-3.5 top-1/2 -translate-y-1/2">
                   <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </button>
               )}
@@ -135,12 +188,12 @@ export default function SearchPage() {
                     <button
                       key={s.id}
                       onClick={() => handleSuggestionClick(s.slug)}
-                      className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3 border-b border-border last:border-0"
+                      className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
                     >
                       <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                       <div>
                         <div className="text-sm font-medium">{s.name}</div>
-                        <div className="text-xs text-muted-foreground capitalize">{s.category.replace(/_/g, " ")} · {s.area}, {s.city}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{s.category.replace(/_/g, " ")} &middot; {s.area}, {s.city}</div>
                       </div>
                     </button>
                   ))}
@@ -150,7 +203,7 @@ export default function SearchPage() {
 
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-11 px-4 border rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${showFilters || activeFilterCount > 0 ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"}`}
+              className={`h-11 px-4 border rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${showFilters || activeFilterCount > 0 ? "border-primary bg-primary/5 text-primary" : "border-border bg-background hover:bg-muted/50"}`}
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span className="hidden sm:inline">Filters</span>
@@ -158,42 +211,66 @@ export default function SearchPage() {
                 <span className="bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>
               )}
             </button>
+
+            <div className="relative hidden sm:block">
+              <select
+                value={selectedSort}
+                onChange={(e) => setSelectedSort(e.target.value)}
+                className="h-11 pl-9 pr-4 border border-border rounded-lg text-sm font-medium bg-background appearance-none cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                {SORT_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
 
           {showFilters && (
-            <div className="mt-4 flex flex-wrap gap-6">
-              <div>
-                <h4 className="font-semibold text-xs text-muted-foreground mb-2 uppercase tracking-wider">City</h4>
-                <div className="flex flex-wrap gap-2">
-                  {CITIES.map(c => (
-                    <button
-                      key={c}
-                      onClick={() => toggleCity(c)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedCity === c ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted"}`}
-                    >
-                      {c}
-                    </button>
+            <div className="mt-5 pt-5 border-t border-border/50 space-y-5">
+              <FilterSection label="City">
+                {CITIES.map(c => (
+                  <FilterChip key={c} label={c} active={selectedCity === c} onClick={() => toggleCity(c)} />
+                ))}
+              </FilterSection>
+
+              <FilterSection label="Category">
+                {CATEGORIES.map(c => (
+                  <FilterChip key={c.value} label={c.label} active={selectedCategory === c.value} onClick={() => toggleCategory(c.value)} />
+                ))}
+              </FilterSection>
+
+              <FilterSection label="Cuisine">
+                {CUISINES.map(c => (
+                  <FilterChip key={c.value} label={c.label} active={selectedCuisine === c.value} onClick={() => toggleCuisine(c.value)} />
+                ))}
+              </FilterSection>
+
+              <div className="flex flex-wrap gap-x-10 gap-y-5">
+                <FilterSection label="Price Range">
+                  {PRICE_RANGES.map(p => (
+                    <FilterChip key={p.value} label={p.label} active={selectedPrice === p.value} onClick={() => togglePrice(p.value)} />
                   ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold text-xs text-muted-foreground mb-2 uppercase tracking-wider">Category</h4>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map(c => (
-                    <button
-                      key={c.value}
-                      onClick={() => toggleCategory(c.value)}
-                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedCategory === c.value ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted"}`}
-                    >
-                      {c.label}
-                    </button>
+                </FilterSection>
+
+                <FilterSection label="Dining Style">
+                  {DINING_STYLES.map(d => (
+                    <FilterChip key={d.value} label={d.label} active={selectedDiningStyle === d.value} onClick={() => toggleDiningStyle(d.value)} />
                   ))}
-                </div>
+                </FilterSection>
               </div>
+
+              <FilterSection label="Services">
+                <FilterChip label="Accepts Reservations" active={acceptsReservations} onClick={() => setAcceptsReservations(p => !p)} />
+                <FilterChip label="Accepts Orders" active={acceptsOrders} onClick={() => setAcceptsOrders(p => !p)} />
+              </FilterSection>
+
               {activeFilterCount > 0 && (
-                <button onClick={clearFilters} className="text-sm text-muted-foreground hover:text-foreground underline self-end">
-                  Clear all
-                </button>
+                <div className="flex justify-end">
+                  <button onClick={clearFilters} className="text-sm text-primary hover:underline font-medium">
+                    Clear all filters
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -201,9 +278,22 @@ export default function SearchPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <p className="text-sm text-muted-foreground mb-5">
-          {isLoading ? "Searching..." : `${data?.total || 0} places found`}
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? "Searching..." : `${data?.total || 0} places found`}
+          </p>
+          <div className="sm:hidden">
+            <select
+              value={selectedSort}
+              onChange={(e) => setSelectedSort(e.target.value)}
+              className="text-sm border border-border rounded-lg px-3 py-2 bg-background"
+            >
+              {SORT_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -218,12 +308,35 @@ export default function SearchPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <h3 className="text-xl font-semibold mb-1">No places found</h3>
-            <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+          <div className="text-center py-24">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No places found</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">Try adjusting your search or filters to find what you're looking for.</p>
           </div>
         )}
       </div>
     </MainLayout>
+  );
+}
+
+function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">{label}</h4>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${active ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-background hover:bg-muted/50 text-foreground"}`}
+    >
+      {label}
+    </button>
   );
 }

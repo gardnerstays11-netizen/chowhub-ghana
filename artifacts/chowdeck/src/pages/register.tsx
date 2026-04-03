@@ -15,7 +15,6 @@ const registerSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(8),
   password: z.string().min(6),
-  city: z.string().min(2),
 });
 
 export default function Register() {
@@ -26,11 +25,11 @@ export default function Register() {
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", city: "Accra" },
+    defaultValues: { name: "", email: "", phone: "", password: "" },
   });
 
   const onSubmit = (data: z.infer<typeof registerSchema>) => {
-    registerMutation.mutate({ data }, {
+    registerMutation.mutate({ data: { ...data, city: "Accra" } }, {
       onSuccess: (res) => {
         loginUser(res.token, res.user);
         toast({ title: "Account created!", description: "Welcome to ChowHub." });
@@ -44,9 +43,9 @@ export default function Register() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-16 max-w-md">
-        <div className="mb-8">
-          <h1 className="text-2xl mb-1" style={{ fontFamily: 'var(--app-font-display)' }}>Create an account</h1>
+      <div className="container mx-auto px-4 py-16 max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight mb-1" style={{ fontFamily: 'var(--app-font-display)' }}>Create an account</h1>
           <p className="text-sm text-muted-foreground">Save your favorite spots and make reservations.</p>
         </div>
 
@@ -57,86 +56,61 @@ export default function Register() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm">Full Name</FormLabel>
+                  <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Kwame Mensah" className="h-10" {...field} />
+                    <Input placeholder="Kwame Mensah" className="h-11 bg-card" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+233..." className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Min 6 characters" className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">City</FormLabel>
-                    <FormControl>
-                      <select 
-                        className="flex h-10 w-full items-center rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
-                        {...field}
-                      >
-                        <option value="Accra">Accra</option>
-                        <option value="Kumasi">Kumasi</option>
-                        <option value="Takoradi">Takoradi</option>
-                        <option value="Tamale">Tamale</option>
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="you@example.com" className="h-11 bg-card" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+233 20 000 0000" className="h-11 bg-card" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Min 6 characters" className="h-11 bg-card" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <Button type="submit" className="w-full h-10 font-semibold mt-2" disabled={registerMutation.isPending}>
-              {registerMutation.isPending ? "Creating account..." : "Sign Up"}
+            <Button type="submit" className="w-full h-11 font-semibold mt-2" disabled={registerMutation.isPending}>
+              {registerMutation.isPending ? "Creating account..." : "Create Account"}
             </Button>
           </form>
         </Form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className="mt-8 text-center text-sm text-muted-foreground">
           Already have an account? <Link href="/login" className="text-primary font-medium hover:underline">Log in</Link>
         </p>
       </div>
