@@ -1,0 +1,523 @@
+Build a full-stack food and dining discovery platform for the Ghanaian 
+market called [APP_NAME]. It is a platform where users can find every 
+type of food and dining establishment across Ghana — restaurants, fine 
+dining, breakfast spots, brunch spots, chop bars, bars, lounges, cafes, 
+bakeries, food stalls, fast food joints, hotel dining, buffets, 
+rooftop dining, pop-ups, and more.
+
+Users can discover places near them, view full listings, make 
+reservations, place orders, and contact businesses directly via 
+phone, website, WhatsApp, or social media.
+
+There is no payment processing on the platform for now. All contact 
+and transactions happen directly between the user and the business.
+
+Choose the best modern tech stack for this project. Pick technologies 
+that are:
+- Production ready and widely supported
+- Best suited for a discovery/listing platform with maps, 
+  filters, and SEO
+- Scalable as the platform grows
+- Easy to deploy and maintain
+- Good for both web and mobile
+
+Document your tech stack choices at the top of the project README 
+and explain why you chose each technology.
+
+---
+
+## DATABASE SCHEMA
+
+Create the following tables:
+
+### users
+- id (uuid, primary key)
+- name (string)
+- email (string, unique)
+- phone (string)
+- password (hashed)
+- city (string)
+- created_at (timestamp)
+
+### vendors
+- id (uuid, primary key)
+- business_name (string)
+- email (string, unique)
+- phone (string)
+- password (hashed)
+- status (enum: pending, approved, rejected)
+- plan (enum: free, premium)
+- plan_expires_at (timestamp, nullable)
+- created_at (timestamp)
+
+### listings
+- id (uuid, primary key)
+- vendor_id (foreign key → vendors)
+- name (string)
+- slug (string, unique) — e.g. "kfc-accra-mall"
+- description (text)
+- category (enum: 
+    restaurant,
+    fine_dining,
+    breakfast_brunch,
+    chop_bar,
+    bar_lounge,
+    rooftop_bar,
+    cafe_bakery,
+    fast_food,
+    food_stall,
+    buffet,
+    hotel_dining,
+    dessert_drinks,
+    pop_up,
+    food_court
+  )
+- cuisine_type (array of strings) — e.g. ["Ghanaian", "Chinese", 
+  "Continental", "Lebanese", "Indian", "Italian", "American", 
+  "Japanese", "West African", "Fusion"]
+- dining_style (enum: casual, formal, fine_dining, buffet, 
+  self_service, takeaway, delivery, dine_in_only)
+- meal_period (array of enums: breakfast, brunch, lunch, 
+  dinner, all_day, late_night)
+- price_range (enum: budget, moderate, upscale, luxury)
+  — represented as: GHS 0-50, GHS 50-150, GHS 150-300, GHS 300+
+- city (enum: accra, kumasi, takoradi, tamale)
+- area (string) — e.g. "Osu", "East Legon", "Adum"
+- neighbourhood (string)
+- address (string)
+- landmark (string) — e.g. "opposite Accra Mall"
+- lat (float)
+- lng (float)
+- phone (string)
+- whatsapp (string)
+- website (string, nullable)
+- instagram (string, nullable)
+- twitter (string, nullable)
+- facebook (string, nullable)
+- tiktok (string, nullable)
+- opening_hours (JSON) — per day open/close times
+- features (array of strings) — e.g. ["Live Music", 
+  "Outdoor Seating", "Private Dining", "Parking", "AC", 
+  "WiFi", "Rooftop", "Sports Viewing", "Kids Friendly", 
+  "Wheelchair Accessible", "Reservations Required", 
+  "Takeaway Available", "Delivery Available", "Shisha", 
+  "Pool Side", "Sea View", "Garden Seating", "BYOB", 
+  "Halal", "Vegan Options"]
+- dress_code (enum: casual, smart_casual, formal, none)
+- accepts_reservations (boolean)
+- accepts_orders (boolean)
+- average_rating (float)
+- total_reviews (integer)
+- is_featured (boolean, default false)
+- is_verified (boolean, default false)
+- meta_title (string)
+- meta_description (string)
+- status (enum: active, inactive, pending)
+- created_at (timestamp)
+
+### listing_photos
+- id (uuid)
+- listing_id (foreign key → listings)
+- url (string)
+- is_cover (boolean)
+- display_order (integer)
+
+### menu_items
+- id (uuid)
+- listing_id (foreign key → listings)
+- name (string)
+- description (string)
+- price (float, nullable)
+- category (string) — e.g. "Starters", "Mains", "Drinks", 
+  "Desserts", "Breakfast", "Sides"
+- photo_url (string, nullable)
+- is_available (boolean, default true)
+- is_popular (boolean, default false)
+
+### reservations
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- date (date)
+- time (string)
+- party_size (integer)
+- occasion (string, nullable) — e.g. "Birthday", "Anniversary",
+  "Business Lunch", "Date Night"
+- special_requests (text, nullable)
+- status (enum: pending, confirmed, declined)
+- created_at (timestamp)
+
+### orders
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- items (JSON) — array of menu items and quantities
+- order_type (enum: delivery, pickup, dine_in)
+- delivery_address (string, nullable)
+- note (text, nullable)
+- status (enum: pending, confirmed, rejected, completed)
+- created_at (timestamp)
+
+### reviews
+- id (uuid)
+- listing_id (foreign key → listings)
+- user_id (foreign key → users)
+- rating (integer, 1-5)
+- food_rating (integer, 1-5)
+- service_rating (integer, 1-5)
+- ambience_rating (integer, 1-5)
+- value_rating (integer, 1-5)
+- comment (text)
+- visited_for (string) — e.g. "Dinner", "Birthday", "Business"
+- created_at (timestamp)
+
+### saved_places
+- id (uuid)
+- user_id (foreign key → users)
+- listing_id (foreign key → listings)
+- created_at (timestamp)
+
+### subscriptions
+- id (uuid)
+- vendor_id (foreign key → vendors)
+- plan (enum: free, premium)
+- start_date (timestamp)
+- end_date (timestamp)
+- status (enum: active, expired, cancelled)
+
+---
+
+## ADVANCED SEARCH & FILTERS
+
+Build a powerful search and filter system where users can 
+combine any filters simultaneously:
+
+Search bar:
+- Search by business name, cuisine type, dish name, area, city
+
+Filters:
+
+Category (single select):
+- Restaurant, Fine Dining, Breakfast & Brunch, Chop Bar,
+  Bar & Lounge, Rooftop Bar, Cafe & Bakery, Fast Food,
+  Food Stall, Buffet, Hotel Dining, Dessert & Drinks,
+  Pop-Up, Food Court
+
+Cuisine type (multi-select):
+- Ghanaian, Continental, Chinese, Lebanese, Indian, Italian,
+  American, Japanese, West African, Fusion, Mediterranean,
+  Mexican, Thai, Turkish
+
+Meal period (multi-select):
+- Breakfast, Brunch, Lunch, Dinner, All Day, Late Night
+
+Price range (single select):
+- Budget (GHS 0–50)
+- Moderate (GHS 50–150)
+- Upscale (GHS 150–300)
+- Luxury (GHS 300+)
+
+Dining style (single select):
+- Casual, Fine Dining, Buffet, Self Service, Takeaway
+
+Features (multi-select):
+- Outdoor Seating, Parking, WiFi, AC, Live Music,
+  Rooftop, Private Dining, Kids Friendly, Sports Viewing,
+  Wheelchair Accessible, Halal, Vegan Options, Shisha,
+  Pool Side, Sea View, Garden Seating, Delivery Available,
+  Takeaway Available
+
+City (single select):
+- Accra, Kumasi, Takoradi, Tamale
+
+Area/Neighbourhood (dynamic based on city):
+- Accra: Osu, East Legon, Labone, Airport Residential,
+  Cantonments, Dzorwulu, Spintex, Tema, Adenta, Haatso,
+  Accra Central, Dansoman, Lapaz, Madina
+- Kumasi: Adum, Asokwa, Nhyiaeso, Bantama, Suame
+- Takoradi: Harbour Area, Market Circle, Anaji, Effia
+- Tamale: Central Tamale, Kalpohin, Lamashegu
+
+Toggles:
+- Open Now (based on Ghana time GMT+0)
+- Accepts Reservations
+- Accepts Orders
+
+Rating filter:
+- 3 stars and above
+- 4 stars and above
+- 4.5 stars and above
+
+Sort options:
+- Nearest to me
+- Highest rated
+- Most reviewed
+- Newest listings
+- Featured first
+- Price: low to high
+- Price: high to low
+
+Active filters display:
+- Show all active filters as removable chips above results
+- Show result count: "47 places found"
+- Clear all filters button
+
+Results display:
+- List view (default) with listing cards
+- Map view toggle (Google Maps with pins)
+- Each card shows: cover photo, name, category, cuisine types,
+  area + city, price range, average rating, open/closed badge,
+  premium badge, distance if GPS available, meal periods
+
+---
+
+## PORTALS & PAGES
+
+### 1. PUBLIC WEBSITE
+
+Homepage:
+- Hero with prominent search bar
+- Near Me button using device GPS
+- Featured/premium listings carousel
+- Browse by category with icons
+- Browse by cuisine type
+- Browse by city
+- Browse by meal period (Breakfast, Brunch, Lunch, 
+  Dinner, Late Night)
+- Highly rated places
+- Recently added
+- How it works section
+
+Search & Browse Page:
+- Full advanced filter panel
+- List and map view toggle
+- Infinite scroll or pagination
+
+Listing Detail Page:
+URL format: /[city]/[category]/[slug]
+Example: /accra/fine-dining/the-buka-restaurant-accra
+
+Include:
+- Cover photo + gallery
+- Name, category, cuisine types
+- Price range indicator
+- Dining style and dress code
+- Meal periods served
+- Open/Closed status with today's hours
+- Full weekly hours (expandable)
+- Description
+- Features/amenities as icons
+- Contact section (in order of prominence):
+  1. Call Now button (tel: link)
+  2. WhatsApp button (wa.me link)
+  3. Visit Website button
+  4. Social media icon links
+- Google Maps embed with location + landmark text
+- Menu section organized by category,
+  popular items highlighted
+- Reservation form (if accepts_reservations = true):
+  date, time, party size, occasion, special requests
+- Order form (if accepts_orders = true):
+  item selection, order type, delivery address, note
+- Reviews section:
+  - Overall rating + food/service/ambience/value breakdown
+  - Individual review cards
+  - Leave a review form (logged in users only)
+  - One review per user per listing
+- Save to favourites button
+- Similar places nearby
+
+SEO per listing page:
+- Title: "[Name] — Menu, Contact & Hours | [APP_NAME]"
+- Dynamic meta description
+- JSON-LD Schema.org Restaurant:
+  name, address, telephone, openingHours, servesCuisine,
+  priceRange, aggregateRating, geo, url, image
+- Open Graph tags
+- Canonical URL
+
+Landing pages (all SEO optimized):
+- City pages: /accra, /kumasi, /takoradi, /tamale
+- City + category: /accra/restaurants, /kumasi/bars
+- City + cuisine: /accra/ghanaian-food, /accra/chinese
+- Neighbourhood: /accra/osu, /accra/east-legon
+- Meal period: /accra/breakfast, /accra/brunch, 
+  /accra/late-night
+
+Auto-generate /sitemap.xml and /robots.txt
+
+User Auth Pages:
+- Sign up, Log in, Forgot password
+
+User Dashboard:
+- My reservations (with status)
+- My orders (with status)
+- Saved places
+- My reviews
+- Profile settings
+
+### 2. VENDOR PORTAL
+URL: /vendor
+
+Vendor Auth:
+- Separate vendor sign up and log in
+- Pending approval status shown after signup
+
+Vendor Onboarding (step by step):
+Step 1: Business basics — name, category, cuisine types,
+  dining style, meal periods, price range
+Step 2: Location — city, area, address, landmark, 
+  map pin placement
+Step 3: Contact — phone, whatsapp, website, social links
+Step 4: Opening hours — per day, option to mark as closed
+Step 5: Features — amenities checkboxes, dress code,
+  accepts reservations toggle, accepts orders toggle
+Step 6: Photos — cover + gallery (min 1 required)
+Step 7: Menu — name, category, price, photo (optional)
+Step 8: Review and submit for approval
+
+Vendor Dashboard (after approval):
+- Stats: profile views, reservations today, 
+  orders today, average rating
+- Reservation inbox: confirm/decline with user details
+- Order inbox: view items, confirm/reject/complete
+- Manage listing: edit all details
+- Photo management: add/remove/reorder
+- Menu management: add/edit/remove items,
+  toggle availability, mark as popular
+- Reviews: view all with sub-ratings
+- Analytics: views, reservations, orders, 
+  contact button clicks over time
+- Plan status and upgrade button
+
+Premium benefits shown to vendor:
+- Featured on homepage and top of search
+- Premium badge on listing
+- Unlimited photos
+- Priority in location results
+- Advanced analytics
+- Menu PDF upload
+
+### 3. ADMIN PORTAL
+URL: /admin
+Admin role protected
+
+Admin Dashboard:
+- Platform stats: listings, users, vendors,
+  reservations, orders, reviews
+- Pending approvals count
+
+Vendor Management:
+- All vendors with status filter
+- Approve/reject with optional message
+- Manually set premium plan with expiry
+
+Listings Management:
+- All listings filterable by city, category, status
+- Feature/unfeature, activate/deactivate, edit
+
+User Management:
+- View all users and activity
+- Deactivate accounts
+
+Reviews Management:
+- View and remove inappropriate reviews
+
+Area Management:
+- Add new neighbourhoods per city
+- Add new cuisine types
+
+---
+
+## KEY BEHAVIOURS
+
+Location/Near Me:
+- Request GPS on homepage
+- Show listings within radius sorted by distance
+- Manual city selection as fallback
+
+Slug generation:
+- Auto-generate from name + city
+- Ensure uniqueness
+
+Opening Hours:
+- JSON per day
+- Open/Closed badge based on Ghana time (GMT+0)
+- Show "Opens at X" or "Closes at X"
+
+Reservation flow:
+1. User fills form — status: pending
+2. Vendor confirms or declines in inbox
+3. User sees status update in dashboard
+
+Order flow:
+1. User selects items and order type
+2. Adds delivery address if delivery
+3. Vendor confirms, rejects, or completes
+4. User sees status update
+
+Reviews:
+- Logged in users only
+- One per user per listing
+- Overall + sub-ratings (food, service, ambience, value)
+- Average updates automatically
+
+Search:
+- All filters combinable
+- URL updates with filter params (shareable links)
+- Active filters shown as removable chips
+- Result count always visible
+
+---
+
+## SEO REQUIREMENTS
+
+Every page:
+- Unique title and meta description
+- Open Graph tags
+- Canonical URL
+
+Listing pages additionally:
+- JSON-LD Schema.org Restaurant structured data
+- All relevant fields included
+
+Auto-generate:
+- /sitemap.xml — all listing, city, category, 
+  cuisine, neighbourhood, meal period pages
+- /robots.txt — allow all crawlers
+
+---
+
+## DESIGN REQUIREMENTS
+
+- Clean, modern, mobile-first
+- Fast loading — lazy load all images
+- Optimized for slow mobile connections
+- Call Now and WhatsApp most prominent on listing pages
+- Warm appetizing color palette (deep green, amber, cream)
+- Clean readable typography
+- Filter panel collapsible on mobile
+- Map integration on search and listing pages
+
+---
+
+## SEED DATA
+
+- 10 listings across all cities and categories
+  (at least 1 fine dining, 1 breakfast, 1 chop bar,
+  1 rooftop bar, 1 fast food, 1 buffet)
+- Each with photos, menu items, and 3+ reviews
+- 1 approved premium vendor
+- 1 approved free vendor
+- 1 admin account
+- 2 user accounts
+- Sample reservations and orders in various statuses
+
+---
+
+Build the complete project with all pages, portals, API routes, 
+database schema, advanced search, SEO, and seed data. Every page 
+must be connected, all flows must work end to end, and the project 
+must run without errors. Prioritize mobile responsiveness and fast 
+load times. Document the chosen tech stack and architecture in 
+the README.

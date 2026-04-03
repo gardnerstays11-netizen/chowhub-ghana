@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "ChowHub Ghana"
+version = "1.0.0"
+id = "artifacts/chowdeck"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20606
+
+[services.development]
+run = "pnpm --filter @workspace/chowdeck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/chowdeck", "run", "build" ]
+publicDir = "artifacts/chowdeck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20606"
+BASE_PATH = "/"
