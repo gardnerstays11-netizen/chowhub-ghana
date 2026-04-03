@@ -151,8 +151,28 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
   });
 });
 
-router.get("/orders/:orderId/stream", authMiddleware, (req, res): void => {
+router.get("/orders/:orderId/stream", authMiddleware, async (req, res): Promise<void> => {
   const { orderId } = req.params;
+  const reqUser = (req as any).user;
+
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const isOrderOwner = order.userId === reqUser.id;
+  const isAdmin = reqUser.role === "admin";
+  let isVendorOwner = false;
+  if (order.listingId) {
+    const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, order.listingId));
+    isVendorOwner = listing && reqUser.id === listing.vendorId;
+  }
+
+  if (!isOrderOwner && !isVendorOwner && !isAdmin) {
+    res.status(403).json({ error: "Not authorized to subscribe to this order" });
+    return;
+  }
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",

@@ -173,7 +173,7 @@ router.post("/auth/forgot-password", forgotPasswordLimiter, async (req, res): Pr
   res.json({ message: "If an account exists with that email, a password reset link has been sent." });
 });
 
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", authLimiter, async (req, res): Promise<void> => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) {
     res.status(400).json({ error: "Token and new password are required" });
@@ -248,7 +248,7 @@ router.post("/auth/vendor/forgot-password", forgotPasswordLimiter, async (req, r
   res.json({ message: "If an account exists with that email, a password reset link has been sent." });
 });
 
-router.post("/auth/vendor/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/vendor/reset-password", authLimiter, async (req, res): Promise<void> => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword) {
     res.status(400).json({ error: "Token and new password are required" });
