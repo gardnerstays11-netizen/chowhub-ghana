@@ -44,6 +44,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `saved_places` — User saved/bookmarked listings
 - `subscriptions` — Vendor subscription records
 - `search_logs` — Search query logs for analytics (query, city, category, filters, resultsCount, userId, sessionId)
+- `partners` — Partner logos for homepage display (name, logoUrl, website, sortOrder, active)
 
 ### API Routes (under `/api`)
 - Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
@@ -55,7 +56,9 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - Orders: `/orders`, `/orders/mine`
 - Saved: `/saved`, `/saved/:listingId`
 - Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos`, `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats`
-- Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`, `/admin/search-analytics`
+- Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`, `/admin/search-analytics`, `/admin/partners`
+- Partners: `GET /partners` (public active list), `POST/PUT/DELETE /admin/partners`
+- Storage: `POST /storage/uploads/request-url`, `GET /storage/objects/*`
 
 ### Design System
 - **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
@@ -81,7 +84,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 
 ## Frontend Pages
 
-- `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings)
+- `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings, "Meet Our Partners" section)
 - `/search` — Search/browse with autocomplete, live filtering (city, category chips), search logging
 - `/listings/:slug` — Listing detail (description, menu, hours, Call Now, WhatsApp)
 - `/login`, `/register` — User auth
@@ -90,6 +93,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/vendor/dashboard` — Vendor dashboard (manage listing, menu, orders, reservations)
 - `/admin/login` — Admin login
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation)
+- `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage)
 
 ## Mobile App (Expo)
 

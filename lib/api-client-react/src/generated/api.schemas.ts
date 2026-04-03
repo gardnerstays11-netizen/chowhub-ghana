@@ -519,6 +519,58 @@ export interface UpdateListingStatusBody {
   status: UpdateListingStatusBodyStatus;
 }
 
+export interface Partner {
+  id: string;
+  name: string;
+  logoUrl: string;
+  /** @nullable */
+  website?: string | null;
+  sortOrder: number;
+}
+
+export interface AdminPartner {
+  id: string;
+  name: string;
+  logoUrl: string;
+  /** @nullable */
+  website?: string | null;
+  sortOrder: number;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface CreatePartnerBody {
+  name: string;
+  logoUrl: string;
+  /** @nullable */
+  website?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdatePartnerBody {
+  name?: string;
+  logoUrl?: string;
+  /** @nullable */
+  website?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
 export interface AutocompleteSuggestion {
   id: string;
   name: string;

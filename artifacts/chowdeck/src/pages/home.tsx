@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Search, MapPin, ArrowRight, Navigation, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete } from "@workspace/api-client-react";
+import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete, useGetPartners } from "@workspace/api-client-react";
 import { ListingCard } from "@/components/listing-card";
 
 const CATEGORIES = [
@@ -63,6 +63,8 @@ export default function Home() {
     { lat: coords?.lat || 0, lng: coords?.lng || 0, radius: 10, limit: 6 },
     { query: { enabled: !!coords } as any }
   );
+
+  const { data: partners } = useGetPartners();
 
   const { data: suggestions } = useGetListingAutocomplete(
     { q: search, limit: 6 },
@@ -264,6 +266,37 @@ export default function Home() {
           ) : null}
         </div>
       </section>
+
+      {partners && partners.length > 0 && (
+        <section className="py-14 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl">Meet Our Partners</h2>
+              <p className="text-muted-foreground text-sm mt-1">Trusted by leading organizations across Ghana</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+              {partners.map(partner => (
+                <a
+                  key={partner.id}
+                  href={partner.website || "#"}
+                  target={partner.website ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className="group block"
+                >
+                  <div className="w-28 h-28 md:w-36 md:h-36 flex items-center justify-center p-4 rounded-xl border border-border bg-white hover:shadow-md hover:border-primary/20 transition-all grayscale hover:grayscale-0">
+                    <img
+                      src={partner.logoUrl}
+                      alt={partner.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground mt-2 group-hover:text-foreground transition-colors">{partner.name}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center max-w-xl">

@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGetAdminStats, useGetAdminVendors, useGetAdminListings, useApproveVendor, useRejectVendor, useGetSearchAnalytics } from "@workspace/api-client-react";
+import { useGetAdminStats, useGetAdminVendors, useGetAdminListings, useApproveVendor, useRejectVendor, useGetSearchAnalytics, useGetAdminPartners } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const { data: vendors } = useGetAdminVendors(undefined, { query: { enabled: isAdmin } as any });
   const { data: listings } = useGetAdminListings(undefined, { query: { enabled: isAdmin } as any });
   const { data: analytics } = useGetSearchAnalytics({ days: 30 }, { query: { enabled: isAdmin } as any });
+  const { data: adminPartners } = useGetAdminPartners({ query: { enabled: isAdmin } as any });
 
   const approveMut = useApproveVendor();
   const rejectMut = useRejectVendor();
@@ -131,6 +132,23 @@ export default function AdminDashboard() {
                   </Pressable>
                 </View>
               )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {adminPartners && adminPartners.length > 0 && (
+        <View style={[styles.section, { borderColor: colors.border, borderRadius: colors.radius }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 16 }}>
+            <Feather name="image" size={18} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold", padding: 0 }]}>Partners ({adminPartners.length})</Text>
+          </View>
+          {adminPartners.map((p: any) => (
+            <View key={p.id} style={[styles.vendorRow, { borderTopColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.vendorName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{p.name}</Text>
+                <Text style={[styles.vendorMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{p.active ? "Active" : "Hidden"}{p.website ? ` · ${p.website}` : ""}</Text>
+              </View>
             </View>
           ))}
         </View>

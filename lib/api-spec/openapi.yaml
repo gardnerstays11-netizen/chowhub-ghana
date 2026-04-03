@@ -30,6 +30,10 @@ tags:
     description: Admin portal
   - name: dashboard
     description: Dashboard and analytics
+  - name: partners
+    description: Partner logos and branding
+  - name: Storage
+    description: Object storage upload and serving endpoints
 
 paths:
   /healthz:
@@ -1275,6 +1279,130 @@ paths:
                   logged:
                     type: boolean
 
+  /partners:
+    get:
+      operationId: getPartners
+      tags: [partners]
+      summary: Get active partners for public display
+      responses:
+        "200":
+          description: Partner list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Partner"
+
+  /admin/partners:
+    get:
+      operationId: getAdminPartners
+      tags: [admin]
+      summary: Get all partners (admin)
+      responses:
+        "200":
+          description: All partners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPartner"
+    post:
+      operationId: createPartner
+      tags: [admin]
+      summary: Create a partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartnerBody"
+      responses:
+        "201":
+          description: Partner created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPartner"
+
+  /admin/partners/{partnerId}:
+    put:
+      operationId: updatePartner
+      tags: [admin]
+      summary: Update a partner
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePartnerBody"
+      responses:
+        "200":
+          description: Partner updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPartner"
+    delete:
+      operationId: deletePartner
+      tags: [admin]
+      summary: Delete a partner
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an uploaded object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object content
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
+
 components:
   schemas:
     HealthStatus:
@@ -2094,6 +2222,93 @@ components:
           type: string
           enum: [active, inactive, pending]
       required: [status]
+
+    Partner:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          type: string
+        website:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+      required: [id, name, logoUrl, sortOrder]
+
+    AdminPartner:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        logoUrl:
+          type: string
+        website:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        active:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, name, logoUrl, sortOrder, active, createdAt]
+
+    CreatePartnerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: string
+        website:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+      required: [name, logoUrl]
+
+    UpdatePartnerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: string
+        website:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        active:
+          type: boolean
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
 
     AutocompleteSuggestion:
       type: object

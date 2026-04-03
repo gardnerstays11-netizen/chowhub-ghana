@@ -1459,3 +1459,100 @@ export const LogSearchBody = zod.object({
   resultsCount: zod.number(),
   sessionId: zod.string().nullish(),
 });
+
+/**
+ * @summary Get active partners for public display
+ */
+export const GetPartnersResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  logoUrl: zod.string(),
+  website: zod.string().nullish(),
+  sortOrder: zod.number(),
+});
+export const GetPartnersResponse = zod.array(GetPartnersResponseItem);
+
+/**
+ * @summary Get all partners (admin)
+ */
+export const GetAdminPartnersResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  logoUrl: zod.string(),
+  website: zod.string().nullish(),
+  sortOrder: zod.number(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const GetAdminPartnersResponse = zod.array(GetAdminPartnersResponseItem);
+
+/**
+ * @summary Create a partner
+ */
+export const CreatePartnerBody = zod.object({
+  name: zod.string(),
+  logoUrl: zod.string(),
+  website: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+});
+
+/**
+ * @summary Update a partner
+ */
+export const UpdatePartnerParams = zod.object({
+  partnerId: zod.coerce.string(),
+});
+
+export const UpdatePartnerBody = zod.object({
+  name: zod.string().optional(),
+  logoUrl: zod.string().optional(),
+  website: zod.string().nullish(),
+  sortOrder: zod.number().optional(),
+  active: zod.boolean().optional(),
+});
+
+export const UpdatePartnerResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  logoUrl: zod.string(),
+  website: zod.string().nullish(),
+  sortOrder: zod.number(),
+  active: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a partner
+ */
+export const DeletePartnerParams = zod.object({
+  partnerId: zod.coerce.string(),
+});
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1),
+  size: zod.number().min(1),
+  contentType: zod.string().min(1),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url(),
+  objectPath: zod.string(),
+  metadata: zod
+    .object({
+      name: zod.string().min(1),
+      size: zod.number().min(1),
+      contentType: zod.string().min(1),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Serve an uploaded object
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce.string(),
+});

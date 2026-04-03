@@ -7,6 +7,7 @@
  */
 
 export * from "./addPhotoBody";
+export * from "./adminPartner";
 export * from "./adminStats";
 export * from "./authResponse";
 export * from "./autocompleteSuggestion";
@@ -17,6 +18,7 @@ export * from "./createListingBodyOpeningHours";
 export * from "./createMenuItemBody";
 export * from "./createOrderBody";
 export * from "./createOrderBodyOrderType";
+export * from "./createPartnerBody";
 export * from "./createReservationBody";
 export * from "./createReviewBody";
 export * from "./cuisineCount";
@@ -47,6 +49,7 @@ export * from "./logSearchBodyFilters";
 export * from "./menuItem";
 export * from "./order";
 export * from "./orderItem";
+export * from "./partner";
 export * from "./registerUserBody";
 export * from "./registerVendorBody";
 export * from "./reservation";
@@ -72,11 +75,14 @@ export * from "./updateListingStatusBodyStatus";
 export * from "./updateMenuItemBody";
 export * from "./updateOrderStatusBody";
 export * from "./updateOrderStatusBodyStatus";
+export * from "./updatePartnerBody";
 export * from "./updateStatusBody";
 export * from "./updateStatusBodyStatus";
 export * from "./updateUserBody";
 export * from "./updateVendorPlanBody";
 export * from "./updateVendorPlanBodyPlan";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
 export * from "./user";
 export * from "./vendor";
 export * from "./vendorAuthResponse";

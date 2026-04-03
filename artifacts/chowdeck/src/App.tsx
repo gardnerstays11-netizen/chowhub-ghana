@@ -20,6 +20,7 @@ import VendorDashboard from "@/pages/vendor/dashboard";
 // Admin
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
+import AdminPartners from "@/pages/admin/partners";
 
 import NotFound from "@/pages/not-found";
 
@@ -51,6 +52,7 @@ function Router() {
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/partners" component={AdminPartners} />
 
       <Route component={NotFound} />
     </Switch>
