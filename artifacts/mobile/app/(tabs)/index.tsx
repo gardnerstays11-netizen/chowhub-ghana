@@ -7,6 +7,7 @@ import { EventCard } from "@/components/EventCard";
 import { useRouter } from "expo-router";
 import { useState, useCallback, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const CATEGORIES = [
   { key: "chop_bar", label: "Chop Bars", icon: "home" as const },
@@ -43,7 +44,7 @@ function SectionHeader({ icon, iconColor, title, subtitle, onSeeAll }: { icon: s
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.sectionHeaderLeft}>
-        <View style={[styles.sectionIcon, { backgroundColor: (iconColor || colors.primary) + "15" }]}>
+        <View style={[styles.sectionIcon, { backgroundColor: (iconColor || colors.primary) + "12" }]}>
           <Feather name={icon as any} size={15} color={iconColor || colors.primary} />
         </View>
         <View>
@@ -52,7 +53,7 @@ function SectionHeader({ icon, iconColor, title, subtitle, onSeeAll }: { icon: s
         </View>
       </View>
       {onSeeAll && (
-        <Pressable onPress={onSeeAll} style={styles.seeAllBtn}>
+        <Pressable onPress={onSeeAll} hitSlop={8} style={({ pressed }) => [styles.seeAllBtn, { opacity: pressed ? 0.7 : 1 }]}>
           <Text style={[styles.seeAllText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>See all</Text>
           <Feather name="chevron-right" size={14} color={colors.primary} />
         </Pressable>
@@ -72,21 +73,27 @@ function HorizontalCarousel({ children }: { children: React.ReactNode }) {
 function QuickStatBanner() {
   const colors = useColors();
   return (
-    <View style={[styles.statBanner, { backgroundColor: colors.primary + "08" }]}>
+    <View style={[styles.statBanner, { backgroundColor: colors.card }]}>
       <View style={styles.statItem}>
-        <Feather name="map-pin" size={16} color={colors.primary} />
+        <View style={[styles.statIconWrap, { backgroundColor: colors.primary + "10" }]}>
+          <Feather name="map-pin" size={15} color={colors.primary} />
+        </View>
         <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>50+</Text>
         <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Restaurants</Text>
       </View>
       <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
       <View style={styles.statItem}>
-        <Feather name="star" size={16} color="#f59e0b" />
+        <View style={[styles.statIconWrap, { backgroundColor: "#fef9ee" }]}>
+          <Feather name="star" size={15} color="#d4941a" />
+        </View>
         <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>4.5+</Text>
         <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Avg Rating</Text>
       </View>
       <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
       <View style={styles.statItem}>
-        <Feather name="map" size={16} color={colors.primary} />
+        <View style={[styles.statIconWrap, { backgroundColor: colors.primary + "10" }]}>
+          <Feather name="map" size={15} color={colors.primary} />
+        </View>
         <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>10+</Text>
         <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Cities</Text>
       </View>
@@ -130,23 +137,30 @@ export default function HomeScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       contentContainerStyle={{ paddingBottom: isWeb ? 34 : 100 }}
     >
-      <View style={[styles.hero, { backgroundColor: colors.primary, paddingTop: isWeb ? 67 + 16 : insets.top + 12 }]}>
-        <Text style={[styles.heroTitle, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+      <LinearGradient
+        colors={["#1c4230", "#24503a", "#2d6248"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.hero, { paddingTop: isWeb ? 67 + 20 : insets.top + 16 }]}
+      >
+        <Text style={[styles.heroTitle, { fontFamily: "Inter_700Bold" }]}>
           Discover great food{"\n"}across Ghana
         </Text>
-        <Text style={[styles.heroSubtitle, { color: "rgba(255,255,255,0.7)", fontFamily: "Inter_400Regular" }]}>
+        <Text style={[styles.heroSubtitle, { fontFamily: "Inter_400Regular" }]}>
           From chop bars to fine dining
         </Text>
         <Pressable
           onPress={() => router.push("/search")}
-          style={[styles.searchBar, { backgroundColor: "#ffffff" }]}
+          style={({ pressed }) => [styles.searchBar, { opacity: pressed ? 0.95 : 1 }]}
         >
-          <Feather name="search" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.searchPlaceholder, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+          <View style={styles.searchIconWrap}>
+            <Feather name="search" size={16} color={colors.primary} />
+          </View>
+          <Text style={[styles.searchPlaceholder, { fontFamily: "Inter_400Regular" }]}>
             Search restaurants, dishes, cuisines...
           </Text>
         </Pressable>
-      </View>
+      </LinearGradient>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
         {CATEGORIES.map((cat) => (
@@ -155,11 +169,11 @@ export default function HomeScreen() {
             onPress={() => router.push({ pathname: "/search", params: { category: cat.key } })}
             style={({ pressed }) => [
               styles.categoryChip,
-              { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 },
+              { backgroundColor: colors.card, opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <View style={[styles.categoryIconWrap, { backgroundColor: colors.primary + "12" }]}>
-              <Feather name={cat.icon} size={16} color={colors.primary} />
+            <View style={[styles.categoryIconWrap, { backgroundColor: colors.primary + "0D" }]}>
+              <Feather name={cat.icon} size={17} color={colors.primary} />
             </View>
             <Text style={[styles.categoryLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{cat.label}</Text>
           </Pressable>
@@ -211,7 +225,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="star"
-            iconColor="#f59e0b"
+            iconColor="#d4941a"
             title="Top Rated"
             subtitle="Highest rated spots in Ghana"
             onSeeAll={() => router.push({ pathname: "/search", params: { sort: "highest_rated" } })}
@@ -228,7 +242,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="trending-up"
-            iconColor="#e74c3c"
+            iconColor="#c0392b"
             title="Popular Joints"
             subtitle="Most ordered this month"
             onSeeAll={() => router.push({ pathname: "/search", params: { sort: "most_reviewed" } })}
@@ -245,7 +259,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="zap"
-            iconColor="#f39c12"
+            iconColor="#e67e22"
             title="Trending Food Spots"
             subtitle="Buzzing with recent activity"
             onSeeAll={() => router.push({ pathname: "/search", params: { sort: "highest_rated" } })}
@@ -262,7 +276,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="truck"
-            iconColor="#10b981"
+            iconColor="#059669"
             title="Quick Bites"
             subtitle="Street food & fast eats"
             onSeeAll={() => router.push({ pathname: "/search", params: { category: "street_food" } })}
@@ -279,7 +293,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="coffee"
-            iconColor="#8b5cf6"
+            iconColor="#7c3aed"
             title="Cafes & Bakeries"
             subtitle="Coffee, pastries & more"
             onSeeAll={() => router.push({ pathname: "/search", params: { category: "cafe_bakery" } })}
@@ -296,7 +310,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="calendar"
-            iconColor="#8e44ad"
+            iconColor="#7c3aed"
             title="Upcoming Events"
             subtitle="Don't miss what's happening"
           />
@@ -325,14 +339,14 @@ export default function HomeScreen() {
       )}
 
       {partners && partners.length > 0 && (
-        <View style={[styles.section, styles.partnersSection]}>
+        <View style={[styles.section, styles.partnersSection, { borderTopColor: colors.border }]}>
           <View style={styles.partnersTitleWrap}>
             <Text style={[styles.partnersTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Our Partners</Text>
             <Text style={[styles.partnersSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Trusted by leading organizations</Text>
           </View>
           <View style={styles.partnersRow}>
             {partners.map((p: any) => (
-              <View key={p.id} style={[styles.partnerCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <View key={p.id} style={[styles.partnerCard, { backgroundColor: colors.card }]}>
                 {p.logoUrl ? (
                   <Image source={{ uri: p.logoUrl }} style={styles.partnerLogo} resizeMode="contain" />
                 ) : (
@@ -352,43 +366,102 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  hero: { paddingHorizontal: 20, paddingBottom: 20 },
-  heroTitle: { fontSize: 26, lineHeight: 32, marginBottom: 4 },
-  heroSubtitle: { fontSize: 14, marginBottom: 14 },
-  searchBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
-  searchPlaceholder: { fontSize: 14 },
+  hero: { paddingHorizontal: 24, paddingBottom: 24 },
+  heroTitle: { fontSize: 28, lineHeight: 34, color: "#fff", letterSpacing: -0.5, marginBottom: 6 },
+  heroSubtitle: { fontSize: 15, color: "rgba(255,255,255,0.65)", marginBottom: 18, letterSpacing: 0.1 },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  searchIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(36,80,58,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchPlaceholder: { fontSize: 14, color: "#999" },
 
-  categoryRow: { paddingHorizontal: 20, paddingVertical: 16, gap: 10 },
-  categoryChip: { alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, minWidth: 80 },
-  categoryIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  categoryLabel: { fontSize: 11 },
+  categoryRow: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 10 },
+  categoryChip: {
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    minWidth: 84,
+  },
+  categoryIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  categoryLabel: { fontSize: 11, letterSpacing: 0.1 },
 
-  statBanner: { flexDirection: "row", marginHorizontal: 20, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 4, alignItems: "center", justifyContent: "space-around" },
-  statItem: { alignItems: "center", gap: 4 },
-  statNum: { fontSize: 18 },
-  statLabel: { fontSize: 10 },
-  statDivider: { width: 1, height: 32 },
+  statBanner: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 4,
+    alignItems: "center",
+    justifyContent: "space-around",
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  statItem: { alignItems: "center", gap: 5 },
+  statIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  statNum: { fontSize: 20, letterSpacing: -0.5 },
+  statLabel: { fontSize: 10, letterSpacing: 0.3, textTransform: "uppercase" },
+  statDivider: { width: 1, height: 40 },
 
-  section: { marginTop: 4 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
+  section: { marginTop: 8 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12 },
   sectionHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  sectionIcon: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  sectionTitle: { fontSize: 17 },
+  sectionIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  sectionTitle: { fontSize: 17, letterSpacing: -0.3 },
   sectionSub: { fontSize: 11, marginTop: 1 },
   seeAllBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
-  seeAllText: { fontSize: 12 },
+  seeAllText: { fontSize: 13 },
 
   carouselContent: { paddingHorizontal: 20, paddingBottom: 4 },
 
   loadingWrap: { paddingTop: 60, alignItems: "center" },
 
-  partnersSection: { borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.06)", marginTop: 12, paddingTop: 8 },
-  partnersTitleWrap: { alignItems: "center", paddingTop: 16, paddingBottom: 12 },
-  partnersTitle: { fontSize: 17 },
-  partnersSub: { fontSize: 11, marginTop: 2 },
-  partnersRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 20, gap: 10, justifyContent: "center", paddingBottom: 8 },
-  partnerCard: { width: 90, borderWidth: 1, borderRadius: 10, padding: 10, alignItems: "center", gap: 6 },
+  partnersSection: { borderTopWidth: 1, marginTop: 16, paddingTop: 8 },
+  partnersTitleWrap: { alignItems: "center", paddingTop: 20, paddingBottom: 14 },
+  partnersTitle: { fontSize: 17, letterSpacing: -0.3 },
+  partnersSub: { fontSize: 12, marginTop: 3 },
+  partnersRow: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 20, gap: 12, justifyContent: "center", paddingBottom: 12 },
+  partnerCard: {
+    width: 90,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
   partnerLogo: { width: 40, height: 40 },
-  partnerLogoFallback: { width: 40, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  partnerLogoFallback: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   partnerName: { fontSize: 10, textAlign: "center" },
 });

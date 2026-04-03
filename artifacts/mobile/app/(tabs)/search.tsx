@@ -134,8 +134,8 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.searchHeader, { backgroundColor: colors.card, borderBottomColor: colors.border, paddingTop: isWeb ? 67 + 8 : 8 }]}>
-        <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+      <View style={[styles.searchHeader, { backgroundColor: colors.card, paddingTop: isWeb ? 67 + 12 : 12 }]}>
+        <View style={[styles.inputWrap, { backgroundColor: colors.muted }]}>
           <Feather name="search" size={16} color={colors.mutedForeground} />
           <TextInput
             value={query}
@@ -152,8 +152,10 @@ export default function SearchScreen() {
             onSubmitEditing={handleSearchSubmit}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => { setQuery(""); setDebouncedQuery(""); setShowAutocomplete(false); }}>
-              <Feather name="x" size={16} color={colors.mutedForeground} />
+            <Pressable onPress={() => { setQuery(""); setDebouncedQuery(""); setShowAutocomplete(false); }} hitSlop={8}>
+              <View style={[styles.clearBtn, { backgroundColor: colors.mutedForeground + "20" }]}>
+                <Feather name="x" size={12} color={colors.mutedForeground} />
+              </View>
             </Pressable>
           )}
         </View>
@@ -164,32 +166,41 @@ export default function SearchScreen() {
             showsHorizontalScrollIndicator={false}
             data={CATEGORIES}
             keyExtractor={(item) => item.value || "all"}
-            contentContainerStyle={{ gap: 6 }}
+            contentContainerStyle={{ gap: 8 }}
             style={{ flex: 1 }}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => setSelectedCategory(prev => prev === item.value ? "" : item.value)}
-                style={[
-                  styles.chip,
-                  {
-                    borderColor: selectedCategory === item.value ? colors.primary : colors.border,
-                    backgroundColor: selectedCategory === item.value ? colors.primary : "transparent",
-                    borderRadius: colors.radius,
-                  },
-                ]}
-              >
-                <Feather name={item.icon} size={12} color={selectedCategory === item.value ? "#fff" : colors.mutedForeground} style={{ marginRight: 4 }} />
-                <Text style={[styles.chipText, {
-                  color: selectedCategory === item.value ? "#fff" : colors.mutedForeground,
-                  fontFamily: selectedCategory === item.value ? "Inter_600SemiBold" : "Inter_400Regular",
-                }]}>{item.label}</Text>
-              </Pressable>
-            )}
+            renderItem={({ item }) => {
+              const active = selectedCategory === item.value;
+              return (
+                <Pressable
+                  onPress={() => setSelectedCategory(prev => prev === item.value ? "" : item.value)}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: active ? colors.primary : "transparent",
+                      borderColor: active ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Feather name={item.icon} size={12} color={active ? "#fff" : colors.mutedForeground} style={{ marginRight: 5 }} />
+                  <Text style={[styles.chipText, {
+                    color: active ? "#fff" : colors.foreground,
+                    fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
+                  }]}>{item.label}</Text>
+                </Pressable>
+              );
+            }}
           />
 
           <Pressable
             onPress={() => setShowSortOptions(!showSortOptions)}
-            style={[styles.sortBtn, { borderColor: colors.border, borderRadius: colors.radius }]}
+            style={({ pressed }) => [
+              styles.sortBtn,
+              {
+                borderColor: selectedSort ? colors.primary : colors.border,
+                backgroundColor: selectedSort ? colors.primary + "0A" : "transparent",
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
           >
             <Feather name="sliders" size={14} color={selectedSort ? colors.primary : colors.mutedForeground} />
           </Pressable>
@@ -197,37 +208,45 @@ export default function SearchScreen() {
 
         {showSortOptions && (
           <View style={styles.sortRow}>
-            {SORT_OPTIONS.map(opt => (
-              <Pressable
-                key={opt.value || "default"}
-                onPress={() => { setSelectedSort(opt.value); setShowSortOptions(false); }}
-                style={[styles.sortChip, {
-                  backgroundColor: selectedSort === opt.value ? colors.primary + "15" : "transparent",
-                  borderColor: selectedSort === opt.value ? colors.primary : colors.border,
-                  borderRadius: colors.radius,
-                }]}
-              >
-                <Text style={[styles.chipText, {
-                  color: selectedSort === opt.value ? colors.primary : colors.mutedForeground,
-                  fontFamily: "Inter_500Medium",
-                }]}>{opt.label}</Text>
-              </Pressable>
-            ))}
+            {SORT_OPTIONS.map(opt => {
+              const active = selectedSort === opt.value;
+              return (
+                <Pressable
+                  key={opt.value || "default"}
+                  onPress={() => { setSelectedSort(opt.value); setShowSortOptions(false); }}
+                  style={[styles.sortChip, {
+                    backgroundColor: active ? colors.primary : "transparent",
+                    borderColor: active ? colors.primary : colors.border,
+                  }]}
+                >
+                  <Text style={[styles.chipText, {
+                    color: active ? "#fff" : colors.foreground,
+                    fontFamily: "Inter_500Medium",
+                  }]}>{opt.label}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </View>
 
       {showRecent && recentSearches.length > 0 && !query && (
-        <View style={[styles.recentPanel, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <View style={[styles.recentPanel, { backgroundColor: colors.card }]}>
           <View style={styles.recentHeader}>
             <Text style={[styles.recentTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Recent Searches</Text>
-            <Pressable onPress={clearRecentSearches}>
+            <Pressable onPress={clearRecentSearches} hitSlop={8}>
               <Text style={[styles.clearText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>Clear</Text>
             </Pressable>
           </View>
           {recentSearches.map((s, i) => (
-            <Pressable key={i} onPress={() => handleRecentPress(s)} style={[styles.recentItem, { borderBottomColor: colors.border }]}>
-              <Feather name="clock" size={14} color={colors.mutedForeground} />
+            <Pressable
+              key={i}
+              onPress={() => handleRecentPress(s)}
+              style={({ pressed }) => [styles.recentItem, { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+            >
+              <View style={[styles.recentIconWrap, { backgroundColor: colors.muted }]}>
+                <Feather name="clock" size={12} color={colors.mutedForeground} />
+              </View>
               <Text style={[styles.recentText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{s}</Text>
               <Feather name="arrow-up-left" size={14} color={colors.mutedForeground} />
             </Pressable>
@@ -236,14 +255,16 @@ export default function SearchScreen() {
       )}
 
       {showAutocomplete && suggestions && suggestions.length > 0 && (
-        <View style={[styles.autocomplete, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.autocomplete, { backgroundColor: colors.card }]}>
           {suggestions.map((s: any) => (
             <Pressable
               key={s.id}
               onPress={() => handleSuggestionPress(s.slug)}
-              style={[styles.autoItem, { borderBottomColor: colors.border }]}
+              style={({ pressed }) => [styles.autoItem, { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
             >
-              <Feather name="map-pin" size={14} color={colors.mutedForeground} />
+              <View style={[styles.autoIconWrap, { backgroundColor: colors.primary + "0D" }]}>
+                <Feather name="map-pin" size={13} color={colors.primary} />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.autoName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{s.name}</Text>
                 <Text style={[styles.autoMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
@@ -264,18 +285,19 @@ export default function SearchScreen() {
         onScrollBeginDrag={() => { setShowAutocomplete(false); setShowRecent(false); }}
         ListHeaderComponent={
           <View style={styles.resultHeader}>
-            <Text style={[styles.resultCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+            <Text style={[styles.resultCount, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
               {isLoading ? "Searching..." : `${data?.total || 0} places found`}
             </Text>
             {selectedSort && (
-              <View style={[styles.activeSortBadge, { backgroundColor: colors.primary + "15", borderRadius: colors.radius }]}>
+              <Pressable
+                onPress={() => setSelectedSort("")}
+                style={[styles.activeSortBadge, { backgroundColor: colors.primary + "0D" }]}
+              >
                 <Text style={[styles.activeSortText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
                   {SORT_OPTIONS.find(o => o.value === selectedSort)?.label}
                 </Text>
-                <Pressable onPress={() => setSelectedSort("")}>
-                  <Feather name="x" size={12} color={colors.primary} />
-                </Pressable>
-              </View>
+                <Feather name="x" size={12} color={colors.primary} />
+              </Pressable>
             )}
           </View>
         }
@@ -284,7 +306,7 @@ export default function SearchScreen() {
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : showEmptySearch ? (
             <View style={styles.empty}>
-              <View style={[styles.emptyIconWrap, { backgroundColor: colors.primary + "10" }]}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: colors.primary + "0A" }]}>
                 <Feather name="compass" size={36} color={colors.primary} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
@@ -296,8 +318,8 @@ export default function SearchScreen() {
             </View>
           ) : (
             <View style={styles.empty}>
-              <View style={[styles.emptyIconWrap, { backgroundColor: "#fef3c7" }]}>
-                <Feather name="search" size={36} color="#f59e0b" />
+              <View style={[styles.emptyIconWrap, { backgroundColor: "#fef9ee" }]}>
+                <Feather name="search" size={36} color="#d4941a" />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
                 No places found
@@ -315,31 +337,53 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchHeader: { paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: 1 },
-  inputWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 42 },
-  input: { flex: 1, fontSize: 14, height: 42 },
-  filtersRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10 },
-  chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  searchHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 46, borderRadius: 14 },
+  input: { flex: 1, fontSize: 15, height: 46 },
+  clearBtn: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  filtersRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 12 },
+  chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   chipText: { fontSize: 12 },
-  sortBtn: { borderWidth: 1, padding: 8 },
-  sortRow: { flexDirection: "row", gap: 6, paddingTop: 8 },
-  sortChip: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
-  resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  sortBtn: { borderWidth: 1, padding: 9, borderRadius: 10 },
+  sortRow: { flexDirection: "row", gap: 8, paddingTop: 10 },
+  sortChip: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   resultCount: { fontSize: 13 },
-  activeSortBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  activeSortText: { fontSize: 11 },
-  empty: { alignItems: "center", paddingTop: 60, gap: 8 },
-  emptyIconWrap: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  emptyTitle: { fontSize: 18 },
-  emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-  autocomplete: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 1, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
-  autoItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  activeSortBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  activeSortText: { fontSize: 12 },
+  empty: { alignItems: "center", paddingTop: 60, gap: 10 },
+  emptyIconWrap: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  emptyTitle: { fontSize: 19, letterSpacing: -0.3 },
+  emptyText: { fontSize: 14, textAlign: "center", lineHeight: 22 },
+  autocomplete: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
+  autoItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  autoIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   autoName: { fontSize: 14 },
-  autoMeta: { fontSize: 12, textTransform: "capitalize" },
-  recentPanel: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  recentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  autoMeta: { fontSize: 12, textTransform: "capitalize", marginTop: 1 },
+  recentPanel: { paddingHorizontal: 16, paddingVertical: 14 },
+  recentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   recentTitle: { fontSize: 14 },
-  clearText: { fontSize: 12 },
-  recentItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  clearText: { fontSize: 13 },
+  recentItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth },
+  recentIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   recentText: { flex: 1, fontSize: 14 },
 });

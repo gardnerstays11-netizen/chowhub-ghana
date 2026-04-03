@@ -18,80 +18,82 @@ export default function ProfileScreen() {
     await logout();
   };
 
-  const MenuItem = ({ icon, label, onPress, color }: { icon: string; label: string; onPress: () => void; color?: string }) => (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}>
-      <Feather name={icon as any} size={18} color={color || colors.foreground} />
+  const MenuItem = ({ icon, label, onPress, color, isLast }: { icon: string; label: string; onPress: () => void; color?: string; isLast?: boolean }) => (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.menuItem, !isLast && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }, { opacity: pressed ? 0.7 : 1 }]}>
+      <View style={[styles.menuIconWrap, { backgroundColor: (color || colors.primary) + "0D" }]}>
+        <Feather name={icon as any} size={16} color={color || colors.primary} />
+      </View>
       <Text style={[styles.menuLabel, { color: color || colors.foreground, fontFamily: "Inter_500Medium" }]}>{label}</Text>
       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
     </Pressable>
   );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 16 : 16, paddingBottom: isWeb ? 34 : 100 }}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 20 : 20, paddingBottom: isWeb ? 34 : 100 }}>
       {isAuthenticated && user ? (
-        <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+        <View style={[styles.userCard, { backgroundColor: colors.card }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.avatarText, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
+            <Text style={[styles.avatarText, { color: "#fff", fontFamily: "Inter_700Bold" }]}>
               {user.name.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.userName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{user.name}</Text>
             <Text style={[styles.userEmail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{user.email}</Text>
           </View>
         </View>
       ) : isAuthenticated && vendor ? (
-        <View style={[styles.userCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+        <View style={[styles.userCard, { backgroundColor: colors.card }]}>
           <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
-            <Feather name="briefcase" size={20} color={colors.secondaryForeground} />
+            <Feather name="briefcase" size={20} color="#fff" />
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.userName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{vendor.businessName}</Text>
             <Text style={[styles.userEmail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{vendor.email}</Text>
           </View>
         </View>
       ) : null}
 
-      <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Account</Text>
         {!isAuthenticated ? (
           <>
             <MenuItem icon="log-in" label="Log in" onPress={() => router.push("/auth/login")} />
-            <MenuItem icon="user-plus" label="Sign up" onPress={() => router.push("/auth/register")} />
+            <MenuItem icon="user-plus" label="Sign up" onPress={() => router.push("/auth/register")} isLast />
           </>
         ) : (
           <>
             <MenuItem icon="clock" label="My Reservations" onPress={() => router.push("/user/reservations")} />
             <MenuItem icon="shopping-bag" label="My Orders" onPress={() => router.push("/user/orders")} />
-            <MenuItem icon="star" label="My Reviews" onPress={() => router.push("/user/reviews")} />
+            <MenuItem icon="star" label="My Reviews" onPress={() => router.push("/user/reviews")} isLast />
           </>
         )}
       </View>
 
-      <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Vendor Portal</Text>
         {mode === "vendor" && isAuthenticated ? (
-          <MenuItem icon="layout" label="Vendor Dashboard" onPress={() => router.push("/vendor/dashboard")} />
+          <MenuItem icon="layout" label="Vendor Dashboard" onPress={() => router.push("/vendor/dashboard")} isLast />
         ) : (
           <>
             <MenuItem icon="log-in" label="Vendor Login" onPress={() => router.push("/vendor/login")} />
-            <MenuItem icon="plus-circle" label="Register Restaurant" onPress={() => router.push("/vendor/register")} />
+            <MenuItem icon="plus-circle" label="Register Restaurant" onPress={() => router.push("/vendor/register")} isLast />
           </>
         )}
       </View>
 
-      <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+      <View style={[styles.section, { backgroundColor: colors.card }]}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Admin</Text>
         {mode === "admin" && isAuthenticated ? (
-          <MenuItem icon="shield" label="Admin Dashboard" onPress={() => router.push("/admin/dashboard")} />
+          <MenuItem icon="shield" label="Admin Dashboard" onPress={() => router.push("/admin/dashboard")} isLast />
         ) : (
-          <MenuItem icon="shield" label="Admin Login" onPress={() => router.push("/admin/login")} />
+          <MenuItem icon="shield" label="Admin Login" onPress={() => router.push("/admin/login")} isLast />
         )}
       </View>
 
       {isAuthenticated && (
-        <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-          <MenuItem icon="log-out" label="Log out" onPress={handleLogout} color={colors.destructive} />
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <MenuItem icon="log-out" label="Log out" onPress={handleLogout} color={colors.destructive} isLast />
         </View>
       )}
     </ScrollView>
@@ -100,13 +102,35 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20 },
-  userCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderWidth: 1, marginBottom: 16 },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  userCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 18,
+    marginBottom: 20,
+    borderRadius: 16,
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  avatar: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   avatarText: { fontSize: 18 },
-  userName: { fontSize: 16 },
-  userEmail: { fontSize: 13 },
-  section: { borderWidth: 1, marginBottom: 16, overflow: "hidden" },
-  sectionLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 },
-  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  userName: { fontSize: 17, letterSpacing: -0.3 },
+  userEmail: { fontSize: 13, marginTop: 2 },
+  section: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#1a2b1f",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  sectionLabel: { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+  menuIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   menuLabel: { flex: 1, fontSize: 15 },
 });
