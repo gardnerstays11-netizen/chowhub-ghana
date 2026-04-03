@@ -45,10 +45,12 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `subscriptions` — Vendor subscription records
 - `search_logs` — Search query logs for analytics (query, city, category, filters, resultsCount, userId, sessionId)
 - `partners` — Partner logos for homepage display (name, logoUrl, website, sortOrder, active)
+- `vendor_events` — Vendor events for discovery feed (title, description, eventDate, endDate, imageUrl, category, listingId, vendorId)
 
 ### API Routes (under `/api`)
 - Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
-- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/nearby`, `/listings/autocomplete`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/popular`, `/listings/trending`, `/listings/nearby`, `/listings/autocomplete`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Events: `GET /events/upcoming` (public), `GET/POST/PUT/DELETE /vendor/events`, `GET /admin/events`
 - Search Logs: `POST /search-logs` (log search queries for analytics)
 - Menu: `/listings/:listingId/menu`
 - Reviews: `/listings/:listingId/reviews`, `/reviews/mine`
@@ -97,7 +99,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 
 ## Mobile App (Expo)
 
-- **Tabs**: Home (nearby via geolocation, featured, recent), Search (autocomplete, category chips, search logging), Saved, Profile
+- **Tabs**: Home (Discover feed: categories, nearby, featured picks, popular joints, trending spots, upcoming events, recently added, partners), Search (autocomplete, category chips, search logging), Saved, Profile
 - **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
 - **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ilike, or, sql, desc, asc, inArray } from "drizzle-orm";
-import { db, listingsTable, listingPhotosTable } from "@workspace/db";
+import { db, listingsTable, listingPhotosTable, ordersTable, reviewsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -268,6 +268,106 @@ router.get("/listings/cuisines-count", async (req, res): Promise<void> => {
   }).from(listingsTable).where(and(...conditions)).groupBy(sql`unnest(${listingsTable.cuisineType})`);
 
   res.json(result.map(r => ({ cuisineType: r.cuisineType, count: Number(r.count) })));
+});
+
+router.get("/listings/popular", async (req, res): Promise<void> => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+
+  const popularListings = await db.select({
+    listingId: ordersTable.listingId,
+    orderCount: sql<number>`count(*)`,
+  }).from(ordersTable)
+    .groupBy(ordersTable.listingId)
+    .orderBy(sql`count(*) DESC`)
+    .limit(limit);
+
+  if (popularListings.length === 0) {
+    const fallback = await db.select().from(listingsTable)
+      .where(eq(listingsTable.status, "active"))
+      .orderBy(desc(listingsTable.totalReviews))
+      .limit(limit);
+    const fallbackIds = fallback.map(l => l.id);
+    let coverPhotos: any[] = [];
+    if (fallbackIds.length > 0) {
+      coverPhotos = await db.select().from(listingPhotosTable).where(
+        and(inArray(listingPhotosTable.listingId, fallbackIds), eq(listingPhotosTable.isCover, true))
+      );
+    }
+    const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+    res.json(fallback.map(l => formatListingCard(l, coverMap.get(l.id))));
+    return;
+  }
+
+  const listingIds = popularListings.map(p => p.listingId);
+  const listings = await db.select().from(listingsTable)
+    .where(and(eq(listingsTable.status, "active"), inArray(listingsTable.id, listingIds)));
+
+  let coverPhotos: any[] = [];
+  if (listings.length > 0) {
+    coverPhotos = await db.select().from(listingPhotosTable).where(
+      and(inArray(listingPhotosTable.listingId, listings.map(l => l.id)), eq(listingPhotosTable.isCover, true))
+    );
+  }
+  const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+  const orderCountMap = new Map(popularListings.map(p => [p.listingId, Number(p.orderCount)]));
+
+  const results = listings
+    .map(l => ({ ...formatListingCard(l, coverMap.get(l.id)), orderCount: orderCountMap.get(l.id) || 0 }))
+    .sort((a, b) => b.orderCount - a.orderCount);
+
+  res.json(results);
+});
+
+router.get("/listings/trending", async (req, res): Promise<void> => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+  const daysAgo = parseInt(req.query.days as string) || 14;
+  const since = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+
+  const trendingListings = await db.select({
+    listingId: reviewsTable.listingId,
+    recentReviews: sql<number>`count(*)`,
+    avgRating: sql<number>`avg(${reviewsTable.rating})`,
+  }).from(reviewsTable)
+    .where(sql`${reviewsTable.createdAt} >= ${since}`)
+    .groupBy(reviewsTable.listingId)
+    .orderBy(sql`count(*) DESC, avg(${reviewsTable.rating}) DESC`)
+    .limit(limit);
+
+  if (trendingListings.length === 0) {
+    const fallback = await db.select().from(listingsTable)
+      .where(eq(listingsTable.status, "active"))
+      .orderBy(desc(listingsTable.averageRating))
+      .limit(limit);
+    const fallbackIds = fallback.map(l => l.id);
+    let coverPhotos: any[] = [];
+    if (fallbackIds.length > 0) {
+      coverPhotos = await db.select().from(listingPhotosTable).where(
+        and(inArray(listingPhotosTable.listingId, fallbackIds), eq(listingPhotosTable.isCover, true))
+      );
+    }
+    const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+    res.json(fallback.map(l => formatListingCard(l, coverMap.get(l.id))));
+    return;
+  }
+
+  const listingIds = trendingListings.map(t => t.listingId);
+  const listings = await db.select().from(listingsTable)
+    .where(and(eq(listingsTable.status, "active"), inArray(listingsTable.id, listingIds)));
+
+  let coverPhotos: any[] = [];
+  if (listings.length > 0) {
+    coverPhotos = await db.select().from(listingPhotosTable).where(
+      and(inArray(listingPhotosTable.listingId, listings.map(l => l.id)), eq(listingPhotosTable.isCover, true))
+    );
+  }
+  const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+
+  const trendingMap = new Map(trendingListings.map(t => [t.listingId, Number(t.recentReviews)]));
+  const results = listings
+    .map(l => ({ ...formatListingCard(l, coverMap.get(l.id)), recentReviews: trendingMap.get(l.id) || 0 }))
+    .sort((a, b) => b.recentReviews - a.recentReviews);
+
+  res.json(results);
 });
 
 router.get("/listings/:slug", async (req, res): Promise<void> => {

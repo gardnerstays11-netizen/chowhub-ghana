@@ -637,6 +637,60 @@ export interface SearchAnalytics {
   dailyVolume: SearchAnalyticsDailyVolumeItem[];
 }
 
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export interface VendorEvent {
+  id: string;
+  title: string;
+  description: string;
+  eventDate: string;
+  endDate?: string | null;
+  imageUrl?: string | null;
+  category: string;
+  listingId: string;
+  listingName: string;
+  listingSlug: string;
+  listingCity: string;
+  listingArea: string;
+}
+
+export interface VendorEventFull {
+  id: string;
+  title: string;
+  description: string;
+  eventDate: string;
+  endDate?: string | null;
+  imageUrl?: string | null;
+  category: string;
+  listingId: string;
+  vendorId: string;
+  active: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface CreateVendorEventBody {
+  listingId: string;
+  title: string;
+  description?: string;
+  eventDate: string;
+  endDate?: string;
+  imageUrl?: string;
+  category?: string;
+}
+
+export interface UpdateVendorEventBody {
+  title?: string;
+  description?: string;
+  eventDate?: string;
+  endDate?: string;
+  imageUrl?: string;
+  category?: string;
+  active?: boolean;
+}
+
 export type SearchListingsParams = {
   q?: string;
   category?: string;
@@ -721,6 +775,19 @@ export type GetNearbyListingsParams = {
   lat: number;
   lng: number;
   radius?: number;
+  limit?: number;
+};
+
+export type GetPopularListingsParams = {
+  limit?: number;
+};
+
+export type GetTrendingListingsParams = {
+  limit?: number;
+  days?: number;
+};
+
+export type GetUpcomingEventsParams = {
   limit?: number;
 };
 

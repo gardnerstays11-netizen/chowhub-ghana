@@ -10,3 +10,4 @@ export * from "./saved-places";
 export * from "./subscriptions";
 export * from "./search-logs";
 export * from "./partners";
+export * from "./vendor-events";

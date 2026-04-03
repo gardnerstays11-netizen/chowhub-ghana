@@ -30,6 +30,7 @@ import type {
   CreatePartnerBody,
   CreateReservationBody,
   CreateReviewBody,
+  CreateVendorEventBody,
   CuisineCount,
   ErrorResponse,
   GetAdminListingsParams,
@@ -39,9 +40,12 @@ import type {
   GetListingAutocompleteParams,
   GetListingReviewsParams,
   GetNearbyListingsParams,
+  GetPopularListingsParams,
   GetRecentListingsParams,
   GetSearchAnalyticsParams,
   GetTopRatedListingsParams,
+  GetTrendingListingsParams,
+  GetUpcomingEventsParams,
   GetVendorOrdersParams,
   GetVendorReservationsParams,
   HealthStatus,
@@ -63,6 +67,7 @@ import type {
   SavedPlace,
   SearchAnalytics,
   SearchListingsParams,
+  SuccessResponse,
   UpdateListingBody,
   UpdateListingStatusBody,
   UpdateMenuItemBody,
@@ -70,12 +75,15 @@ import type {
   UpdatePartnerBody,
   UpdateStatusBody,
   UpdateUserBody,
+  UpdateVendorEventBody,
   UpdateVendorPlanBody,
   UploadUrlRequest,
   UploadUrlResponse,
   User,
   Vendor,
   VendorAuthResponse,
+  VendorEvent,
+  VendorEventFull,
   VendorStats,
 } from "./api.schemas";
 
@@ -1385,6 +1393,707 @@ export function useGetNearbyListings<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetNearbyListingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get most ordered listings
+ */
+export const getGetPopularListingsUrl = (params?: GetPopularListingsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/listings/popular?${stringifiedParams}`
+    : `/api/listings/popular`;
+};
+
+export const getPopularListings = async (
+  params?: GetPopularListingsParams,
+  options?: RequestInit,
+): Promise<ListingCard[]> => {
+  return customFetch<ListingCard[]>(getGetPopularListingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPopularListingsQueryKey = (
+  params?: GetPopularListingsParams,
+) => {
+  return [`/api/listings/popular`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetPopularListingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPopularListings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPopularListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPopularListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPopularListingsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getPopularListings>>
+  > = ({ signal }) => getPopularListings(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPopularListings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPopularListingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPopularListings>>
+>;
+export type GetPopularListingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get most ordered listings
+ */
+
+export function useGetPopularListings<
+  TData = Awaited<ReturnType<typeof getPopularListings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetPopularListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getPopularListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPopularListingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get trending listings based on recent reviews
+ */
+export const getGetTrendingListingsUrl = (
+  params?: GetTrendingListingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/listings/trending?${stringifiedParams}`
+    : `/api/listings/trending`;
+};
+
+export const getTrendingListings = async (
+  params?: GetTrendingListingsParams,
+  options?: RequestInit,
+): Promise<ListingCard[]> => {
+  return customFetch<ListingCard[]>(getGetTrendingListingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTrendingListingsQueryKey = (
+  params?: GetTrendingListingsParams,
+) => {
+  return [`/api/listings/trending`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetTrendingListingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTrendingListings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTrendingListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetTrendingListingsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getTrendingListings>>
+  > = ({ signal }) =>
+    getTrendingListings(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTrendingListings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTrendingListingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTrendingListings>>
+>;
+export type GetTrendingListingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get trending listings based on recent reviews
+ */
+
+export function useGetTrendingListings<
+  TData = Awaited<ReturnType<typeof getTrendingListings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetTrendingListingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getTrendingListings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTrendingListingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get upcoming vendor events
+ */
+export const getGetUpcomingEventsUrl = (params?: GetUpcomingEventsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/events/upcoming?${stringifiedParams}`
+    : `/api/events/upcoming`;
+};
+
+export const getUpcomingEvents = async (
+  params?: GetUpcomingEventsParams,
+  options?: RequestInit,
+): Promise<VendorEvent[]> => {
+  return customFetch<VendorEvent[]>(getGetUpcomingEventsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetUpcomingEventsQueryKey = (
+  params?: GetUpcomingEventsParams,
+) => {
+  return [`/api/events/upcoming`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetUpcomingEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getUpcomingEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetUpcomingEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUpcomingEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetUpcomingEventsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getUpcomingEvents>>
+  > = ({ signal }) => getUpcomingEvents(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getUpcomingEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetUpcomingEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getUpcomingEvents>>
+>;
+export type GetUpcomingEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get upcoming vendor events
+ */
+
+export function useGetUpcomingEvents<
+  TData = Awaited<ReturnType<typeof getUpcomingEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetUpcomingEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getUpcomingEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetUpcomingEventsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get vendor's own events
+ */
+export const getGetVendorEventsUrl = () => {
+  return `/api/vendor/events`;
+};
+
+export const getVendorEvents = async (
+  options?: RequestInit,
+): Promise<VendorEventFull[]> => {
+  return customFetch<VendorEventFull[]>(getGetVendorEventsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetVendorEventsQueryKey = () => {
+  return [`/api/vendor/events`] as const;
+};
+
+export const getGetVendorEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVendorEvents>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getVendorEvents>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetVendorEventsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getVendorEvents>>> = ({
+    signal,
+  }) => getVendorEvents({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getVendorEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetVendorEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getVendorEvents>>
+>;
+export type GetVendorEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get vendor's own events
+ */
+
+export function useGetVendorEvents<
+  TData = Awaited<ReturnType<typeof getVendorEvents>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getVendorEvents>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetVendorEventsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a vendor event
+ */
+export const getCreateVendorEventUrl = () => {
+  return `/api/vendor/events`;
+};
+
+export const createVendorEvent = async (
+  createVendorEventBody: CreateVendorEventBody,
+  options?: RequestInit,
+): Promise<VendorEventFull> => {
+  return customFetch<VendorEventFull>(getCreateVendorEventUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createVendorEventBody),
+  });
+};
+
+export const getCreateVendorEventMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVendorEvent>>,
+    TError,
+    { data: BodyType<CreateVendorEventBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVendorEvent>>,
+  TError,
+  { data: BodyType<CreateVendorEventBody> },
+  TContext
+> => {
+  const mutationKey = ["createVendorEvent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVendorEvent>>,
+    { data: BodyType<CreateVendorEventBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createVendorEvent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVendorEventMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVendorEvent>>
+>;
+export type CreateVendorEventMutationBody = BodyType<CreateVendorEventBody>;
+export type CreateVendorEventMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a vendor event
+ */
+export const useCreateVendorEvent = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVendorEvent>>,
+    TError,
+    { data: BodyType<CreateVendorEventBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVendorEvent>>,
+  TError,
+  { data: BodyType<CreateVendorEventBody> },
+  TContext
+> => {
+  return useMutation(getCreateVendorEventMutationOptions(options));
+};
+
+/**
+ * @summary Update a vendor event
+ */
+export const getUpdateVendorEventUrl = (id: string) => {
+  return `/api/vendor/events/${id}`;
+};
+
+export const updateVendorEvent = async (
+  id: string,
+  updateVendorEventBody: UpdateVendorEventBody,
+  options?: RequestInit,
+): Promise<VendorEventFull> => {
+  return customFetch<VendorEventFull>(getUpdateVendorEventUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateVendorEventBody),
+  });
+};
+
+export const getUpdateVendorEventMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVendorEvent>>,
+    TError,
+    { id: string; data: BodyType<UpdateVendorEventBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVendorEvent>>,
+  TError,
+  { id: string; data: BodyType<UpdateVendorEventBody> },
+  TContext
+> => {
+  const mutationKey = ["updateVendorEvent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVendorEvent>>,
+    { id: string; data: BodyType<UpdateVendorEventBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateVendorEvent(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVendorEventMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVendorEvent>>
+>;
+export type UpdateVendorEventMutationBody = BodyType<UpdateVendorEventBody>;
+export type UpdateVendorEventMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a vendor event
+ */
+export const useUpdateVendorEvent = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVendorEvent>>,
+    TError,
+    { id: string; data: BodyType<UpdateVendorEventBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVendorEvent>>,
+  TError,
+  { id: string; data: BodyType<UpdateVendorEventBody> },
+  TContext
+> => {
+  return useMutation(getUpdateVendorEventMutationOptions(options));
+};
+
+/**
+ * @summary Delete a vendor event
+ */
+export const getDeleteVendorEventUrl = (id: string) => {
+  return `/api/vendor/events/${id}`;
+};
+
+export const deleteVendorEvent = async (
+  id: string,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteVendorEventUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVendorEventMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVendorEvent>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVendorEvent>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deleteVendorEvent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVendorEvent>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteVendorEvent(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVendorEventMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVendorEvent>>
+>;
+
+export type DeleteVendorEventMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a vendor event
+ */
+export const useDeleteVendorEvent = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVendorEvent>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVendorEvent>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeleteVendorEventMutationOptions(options));
+};
+
+/**
+ * @summary Get all events (admin)
+ */
+export const getGetAdminEventsUrl = () => {
+  return `/api/admin/events`;
+};
+
+export const getAdminEvents = async (
+  options?: RequestInit,
+): Promise<VendorEventFull[]> => {
+  return customFetch<VendorEventFull[]>(getGetAdminEventsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminEventsQueryKey = () => {
+  return [`/api/admin/events`] as const;
+};
+
+export const getGetAdminEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminEvents>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminEvents>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminEventsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminEvents>>> = ({
+    signal,
+  }) => getAdminEvents({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminEvents>>
+>;
+export type GetAdminEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get all events (admin)
+ */
+
+export function useGetAdminEvents<
+  TData = Awaited<ReturnType<typeof getAdminEvents>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminEvents>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminEventsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

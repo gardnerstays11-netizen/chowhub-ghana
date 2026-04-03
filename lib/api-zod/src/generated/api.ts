@@ -409,6 +409,211 @@ export const GetNearbyListingsResponse = zod.array(
 );
 
 /**
+ * @summary Get most ordered listings
+ */
+export const getPopularListingsQueryLimitDefault = 10;
+
+export const GetPopularListingsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getPopularListingsQueryLimitDefault),
+});
+
+export const GetPopularListingsResponseItem = zod.object({
+  id: zod.string(),
+  vendorId: zod.string().optional(),
+  name: zod.string(),
+  slug: zod.string(),
+  category: zod.string(),
+  cuisineType: zod.array(zod.string()),
+  diningStyle: zod.string().optional(),
+  mealPeriod: zod.array(zod.string()).optional(),
+  priceRange: zod.string(),
+  city: zod.string(),
+  area: zod.string(),
+  averageRating: zod.number(),
+  totalReviews: zod.number(),
+  isFeatured: zod.boolean(),
+  isVerified: zod.boolean().optional(),
+  status: zod.string(),
+  coverPhoto: zod.string().nullish(),
+  phone: zod.string().optional(),
+  whatsapp: zod.string().optional(),
+  acceptsReservations: zod.boolean().optional(),
+  acceptsOrders: zod.boolean().optional(),
+  openingHours: zod.object({}).passthrough().optional(),
+  lat: zod.number().optional(),
+  lng: zod.number().optional(),
+  distance: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+export const GetPopularListingsResponse = zod.array(
+  GetPopularListingsResponseItem,
+);
+
+/**
+ * @summary Get trending listings based on recent reviews
+ */
+export const getTrendingListingsQueryLimitDefault = 10;
+export const getTrendingListingsQueryDaysDefault = 14;
+
+export const GetTrendingListingsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getTrendingListingsQueryLimitDefault),
+  days: zod.coerce.number().default(getTrendingListingsQueryDaysDefault),
+});
+
+export const GetTrendingListingsResponseItem = zod.object({
+  id: zod.string(),
+  vendorId: zod.string().optional(),
+  name: zod.string(),
+  slug: zod.string(),
+  category: zod.string(),
+  cuisineType: zod.array(zod.string()),
+  diningStyle: zod.string().optional(),
+  mealPeriod: zod.array(zod.string()).optional(),
+  priceRange: zod.string(),
+  city: zod.string(),
+  area: zod.string(),
+  averageRating: zod.number(),
+  totalReviews: zod.number(),
+  isFeatured: zod.boolean(),
+  isVerified: zod.boolean().optional(),
+  status: zod.string(),
+  coverPhoto: zod.string().nullish(),
+  phone: zod.string().optional(),
+  whatsapp: zod.string().optional(),
+  acceptsReservations: zod.boolean().optional(),
+  acceptsOrders: zod.boolean().optional(),
+  openingHours: zod.object({}).passthrough().optional(),
+  lat: zod.number().optional(),
+  lng: zod.number().optional(),
+  distance: zod.number().nullish(),
+  createdAt: zod.string(),
+});
+export const GetTrendingListingsResponse = zod.array(
+  GetTrendingListingsResponseItem,
+);
+
+/**
+ * @summary Get upcoming vendor events
+ */
+export const getUpcomingEventsQueryLimitDefault = 10;
+
+export const GetUpcomingEventsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getUpcomingEventsQueryLimitDefault),
+});
+
+export const GetUpcomingEventsResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  eventDate: zod.string(),
+  endDate: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  category: zod.string(),
+  listingId: zod.string(),
+  listingName: zod.string(),
+  listingSlug: zod.string(),
+  listingCity: zod.string(),
+  listingArea: zod.string(),
+});
+export const GetUpcomingEventsResponse = zod.array(
+  GetUpcomingEventsResponseItem,
+);
+
+/**
+ * @summary Get vendor's own events
+ */
+export const GetVendorEventsResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  eventDate: zod.string(),
+  endDate: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  category: zod.string(),
+  listingId: zod.string(),
+  vendorId: zod.string(),
+  active: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+});
+export const GetVendorEventsResponse = zod.array(GetVendorEventsResponseItem);
+
+/**
+ * @summary Create a vendor event
+ */
+export const CreateVendorEventBody = zod.object({
+  listingId: zod.string(),
+  title: zod.string(),
+  description: zod.string().optional(),
+  eventDate: zod.string(),
+  endDate: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  category: zod.string().optional(),
+});
+
+/**
+ * @summary Update a vendor event
+ */
+export const UpdateVendorEventParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateVendorEventBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().optional(),
+  eventDate: zod.string().optional(),
+  endDate: zod.string().optional(),
+  imageUrl: zod.string().optional(),
+  category: zod.string().optional(),
+  active: zod.boolean().optional(),
+});
+
+export const UpdateVendorEventResponse = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  eventDate: zod.string(),
+  endDate: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  category: zod.string(),
+  listingId: zod.string(),
+  vendorId: zod.string(),
+  active: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a vendor event
+ */
+export const DeleteVendorEventParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const DeleteVendorEventResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get all events (admin)
+ */
+export const GetAdminEventsResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  eventDate: zod.string(),
+  endDate: zod.string().nullish(),
+  imageUrl: zod.string().nullish(),
+  category: zod.string(),
+  listingId: zod.string(),
+  vendorId: zod.string(),
+  active: zod.boolean(),
+  sortOrder: zod.number(),
+  createdAt: zod.string(),
+});
+export const GetAdminEventsResponse = zod.array(GetAdminEventsResponseItem);
+
+/**
  * @summary Get listing count per category
  */
 export const GetCategoriesCountQueryParams = zod.object({

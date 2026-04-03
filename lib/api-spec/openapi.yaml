@@ -435,6 +435,173 @@ paths:
                 items:
                   $ref: "#/components/schemas/ListingCard"
 
+  /listings/popular:
+    get:
+      operationId: getPopularListings
+      tags: [listings]
+      summary: Get most ordered listings
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Popular listings by order count
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /listings/trending:
+    get:
+      operationId: getTrendingListings
+      tags: [listings]
+      summary: Get trending listings based on recent reviews
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 14
+      responses:
+        "200":
+          description: Trending listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /events/upcoming:
+    get:
+      operationId: getUpcomingEvents
+      tags: [listings]
+      summary: Get upcoming vendor events
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorEvent"
+
+  /vendor/events:
+    get:
+      operationId: getVendorEvents
+      tags: [vendors]
+      summary: Get vendor's own events
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Vendor events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorEventFull"
+    post:
+      operationId: createVendorEvent
+      tags: [vendors]
+      summary: Create a vendor event
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVendorEventBody"
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorEventFull"
+
+  /vendor/events/{id}:
+    put:
+      operationId: updateVendorEvent
+      tags: [vendors]
+      summary: Update a vendor event
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVendorEventBody"
+      responses:
+        "200":
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorEventFull"
+    delete:
+      operationId: deleteVendorEvent
+      tags: [vendors]
+      summary: Delete a vendor event
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/events:
+    get:
+      operationId: getAdminEvents
+      tags: [admin]
+      summary: Get all events (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorEventFull"
+
   /listings/categories-count:
     get:
       operationId: getCategoriesCount
@@ -2412,3 +2579,109 @@ components:
                 type: integer
             required: [date, count]
       required: [period, stats, topSearches, topCategories, topCities, dailyVolume]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    VendorEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        category:
+          type: string
+        listingId:
+          type: string
+        listingName:
+          type: string
+        listingSlug:
+          type: string
+        listingCity:
+          type: string
+        listingArea:
+          type: string
+      required: [id, title, description, eventDate, category, listingId, listingName, listingSlug, listingCity, listingArea]
+
+    VendorEventFull:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        category:
+          type: string
+        listingId:
+          type: string
+        vendorId:
+          type: string
+        active:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, title, description, eventDate, category, listingId, vendorId, active, sortOrder, createdAt]
+
+    CreateVendorEventBody:
+      type: object
+      properties:
+        listingId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+        endDate:
+          type: string
+        imageUrl:
+          type: string
+        category:
+          type: string
+      required: [listingId, title, eventDate]
+
+    UpdateVendorEventBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+        endDate:
+          type: string
+        imageUrl:
+          type: string
+        category:
+          type: string
+        active:
+          type: boolean

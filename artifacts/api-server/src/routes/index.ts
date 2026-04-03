@@ -12,6 +12,7 @@ import adminRouter from "./admin";
 import searchLogsRouter from "./search-logs";
 import partnersRouter from "./partners";
 import storageRouter from "./storage";
+import eventsRouter from "./events";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(adminRouter);
 router.use(searchLogsRouter);
 router.use(partnersRouter);
 router.use(storageRouter);
+router.use(eventsRouter);
 
 export default router;
