@@ -79,10 +79,12 @@ router.post("/payments/initialize", authMiddleware, async (req, res): Promise<vo
 });
 
 router.post("/payments/initialize-subscription", authMiddleware, async (req, res): Promise<void> => {
-  const { vendorId, packageSlug, amount, email, callbackUrl } = req.body;
+  const reqUser = (req as any).user;
+  const vendorId = reqUser.id;
+  const { packageSlug, amount, email, callbackUrl } = req.body;
 
-  if (!vendorId || !packageSlug || !amount || !email) {
-    res.status(400).json({ error: "vendorId, packageSlug, amount, and email are required" });
+  if (!packageSlug || !amount || !email) {
+    res.status(400).json({ error: "packageSlug, amount, and email are required" });
     return;
   }
 

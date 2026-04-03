@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { User, Vendor } from "@workspace/api-client-react";
+import { User, Vendor, setAuthTokenGetter } from "@workspace/api-client-react";
 
 interface AuthState {
   token: string | null;
@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("chowhub_vendor");
       localStorage.removeItem("chowhub_role");
     }
+    setAuthTokenGetter(token ? () => token : null);
   }, [token]);
 
   useEffect(() => {

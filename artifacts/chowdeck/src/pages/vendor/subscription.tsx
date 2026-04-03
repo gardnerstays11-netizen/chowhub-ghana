@@ -28,7 +28,7 @@ export default function VendorSubscription() {
   const [subscribing, setSubscribing] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/subscription-packages", {
+    fetch("/api/subscription-packages", {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(r => r.json())

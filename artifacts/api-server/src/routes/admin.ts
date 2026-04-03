@@ -266,6 +266,17 @@ router.delete("/admin/reviews/:reviewId", adminAuthMiddleware, async (req, res):
   res.sendStatus(204);
 });
 
+router.get("/subscription-packages", async (_req, res): Promise<void> => {
+  const packages = await db.select().from(subscriptionPackagesTable).orderBy(asc(subscriptionPackagesTable.sortOrder));
+  res.json(packages.filter(p => p.isActive).map(p => ({
+    id: p.id, name: p.name, slug: p.slug, description: p.description,
+    price: p.price, billingCycle: p.billingCycle,
+    maxPhotos: p.maxPhotos, maxMenuItems: p.maxMenuItems,
+    isFeaturedIncluded: p.isFeaturedIncluded, prioritySupport: p.prioritySupport,
+    analyticsAccess: p.analyticsAccess,
+  })));
+});
+
 router.get("/admin/subscription-packages", adminAuthMiddleware, async (_req, res): Promise<void> => {
   const packages = await db.select().from(subscriptionPackagesTable).orderBy(asc(subscriptionPackagesTable.sortOrder));
   res.json(packages.map(p => ({

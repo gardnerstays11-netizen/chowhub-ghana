@@ -95,6 +95,22 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
     return;
   }
 
+  const [existingOrder] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+  if (!existingOrder) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const reqUser = (req as any).user;
+  const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, existingOrder.listingId));
+  const isVendorOwner = listing && reqUser.id === listing.vendorId;
+  const isAdmin = reqUser.role === 'admin';
+
+  if (!isVendorOwner && !isAdmin) {
+    res.status(403).json({ error: "Only the vendor or admin can update order status" });
+    return;
+  }
+
   const [order] = await db.update(ordersTable)
     .set({ status })
     .where(eq(ordersTable.id, orderId))
@@ -105,7 +121,6 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
     return;
   }
 
-  const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, order.listingId));
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, order.userId));
 
   if (user && listing) {
