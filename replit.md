@@ -1,8 +1,8 @@
-# Workspace
+# ChowHub Ghana — Food & Dining Discovery Platform
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Full-stack food discovery platform for the Ghanaian market. pnpm workspace monorepo with TypeScript.
 
 ## Stack
 
@@ -12,9 +12,52 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
+- **Frontend**: React + Vite + Tailwind CSS v4
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Auth**: JWT (bcrypt + jsonwebtoken), stored in localStorage
+- **Build**: esbuild (API server), Vite (frontend)
+
+## Architecture
+
+### Artifacts
+- `artifacts/api-server` — Express API server (port 8080)
+- `artifacts/chowdeck` — React + Vite web app (previewPath `/`)
+- `artifacts/mockup-sandbox` — Component Preview Server
+
+### Libraries
+- `lib/api-spec` — OpenAPI specification
+- `lib/api-zod` — Zod schemas generated from OpenAPI
+- `lib/api-client-react` — React Query hooks + custom fetch client
+- `lib/db` — Drizzle ORM schema and database connection
+
+### Database Schema (PostgreSQL)
+- `users` — User accounts (role: user/admin)
+- `vendors` — Vendor accounts (status: pending/approved/rejected, plan: free/premium)
+- `listings` — Restaurant/food spot listings
+- `listing_photos` — Listing photos
+- `menu_items` — Menu items per listing
+- `reviews` — User reviews with sub-ratings (food, service, ambience, value)
+- `reservations` — Table reservations
+- `orders` — Food orders (delivery/pickup)
+- `saved_places` — User saved/bookmarked listings
+- `subscriptions` — Vendor subscription records
+
+### API Routes (under `/api`)
+- Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
+- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/nearby`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Menu: `/listings/:listingId/menu`
+- Reviews: `/listings/:listingId/reviews`, `/reviews/mine`
+- Reservations: `/reservations`, `/reservations/mine`
+- Orders: `/orders`, `/orders/mine`
+- Saved: `/saved`, `/saved/:listingId`
+- Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos`, `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats`
+- Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`
+
+### Design System
+- **Colors**: Deep green (primary), Amber/Gold (secondary), Cream/off-white (background)
+- **Fonts**: Playfair Display (serif headings), Plus Jakarta Sans (body)
+- **Theme**: Warm Ghanaian food market vibe, mobile-first
 
 ## Key Commands
 
@@ -22,6 +65,28 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+- `pnpm --filter @workspace/scripts run seed` — seed database with sample data
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+## Seed Data Credentials
+
+- Admin: admin@chowhub.gh / admin123
+- User: ama@example.com / password123
+- User: kofi@example.com / password123
+- Vendor (premium): muni@chowhub.gh / password123
+- Vendor (free): chopbar@chowhub.gh / password123
+
+## Frontend Pages
+
+- `/` — Homepage (hero search, categories, featured & recent listings)
+- `/search` — Search/browse with filters (city, category, cuisine)
+- `/listings/:slug` — Listing detail (description, menu, hours, Call Now, WhatsApp)
+- `/login`, `/register` — User auth
+- `/dashboard` — User dashboard (reservations, orders, saved, reviews)
+- `/vendor/login`, `/vendor/register` — Vendor auth
+- `/vendor/dashboard` — Vendor dashboard (manage listing, menu, orders, reservations)
+- `/admin/login` — Admin login
+- `/admin/dashboard` — Admin dashboard (stats, vendor approval, listing moderation)
+
+## Vite Proxy
+
+The chowdeck Vite config proxies `/api` requests to `http://localhost:8080` (the API server).

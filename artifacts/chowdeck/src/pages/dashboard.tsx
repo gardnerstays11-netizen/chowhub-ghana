@@ -1,0 +1,183 @@
+import { MainLayout } from "@/components/layout";
+import { useAuth } from "@/hooks/use-auth";
+import { useGetMyReservations, useGetMyOrders, useGetSavedPlaces, useGetMyReviews, useUpdateUserProfile } from "@workspace/api-client-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ListingCard } from "@/components/listing-card";
+import { Star } from "lucide-react";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
+
+export default function Dashboard() {
+  const { user, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setLocation("/login");
+    }
+  }, [isAuthenticated, setLocation]);
+
+  const { data: reservations } = useGetMyReservations({ query: { enabled: isAuthenticated } });
+  const { data: orders } = useGetMyOrders({ query: { enabled: isAuthenticated } });
+  const { data: savedPlaces } = useGetSavedPlaces({ query: { enabled: isAuthenticated } });
+  const { data: reviews } = useGetMyReviews({ query: { enabled: isAuthenticated } });
+
+  if (!isAuthenticated || !user) return null;
+
+  return (
+    <MainLayout>
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl font-serif font-bold mb-2">Welcome, {user.name}</h1>
+          <p className="text-muted-foreground">Manage your dining experiences in {user.city}.</p>
+        </div>
+
+        <Tabs defaultValue="reservations" className="space-y-8">
+          <TabsList className="bg-card border border-border/50 h-auto p-1 overflow-x-auto flex w-full justify-start rounded-xl">
+            <TabsTrigger value="reservations" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">My Reservations</TabsTrigger>
+            <TabsTrigger value="orders" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">My Orders</TabsTrigger>
+            <TabsTrigger value="saved" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Saved Places</TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">My Reviews</TabsTrigger>
+            <TabsTrigger value="profile" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Profile Settings</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reservations" className="space-y-4 outline-none">
+            {reservations?.length ? (
+              <div className="grid gap-4">
+                {reservations.map(res => (
+                  <Card key={res.id} className="border-border/50 shadow-sm">
+                    <CardContent className="p-6 flex flex-col md:flex-row justify-between md:items-center gap-4">
+                      <div>
+                        <h3 className="font-bold text-lg">{res.listingName}</h3>
+                        <p className="text-muted-foreground">
+                          {format(new Date(res.date), "MMM d, yyyy")} at {res.time} • Party of {res.partySize}
+                        </p>
+                        {res.occasion && <p className="text-sm text-muted-foreground mt-1">Occasion: {res.occasion}</p>}
+                      </div>
+                      <Badge variant={res.status === 'confirmed' ? 'default' : res.status === 'declined' ? 'destructive' : 'secondary'} className="capitalize">
+                        {res.status}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-muted/30 rounded-3xl border border-border/50">
+                <p className="text-muted-foreground">No reservations yet.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-4 outline-none">
+            {orders?.length ? (
+              <div className="grid gap-4">
+                {orders.map(order => (
+                  <Card key={order.id} className="border-border/50 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4">
+                        <div>
+                          <h3 className="font-bold text-lg">{order.listingName}</h3>
+                          <p className="text-muted-foreground">
+                            {format(new Date(order.createdAt), "MMM d, yyyy 'at' h:mm a")} • {order.orderType.replace('_', ' ')}
+                          </p>
+                        </div>
+                        <Badge variant={order.status === 'completed' ? 'default' : 'secondary'} className="capitalize">
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <div className="bg-muted/30 rounded-xl p-4">
+                        <ul className="space-y-2">
+                          {order.items.map((item, i) => (
+                            <li key={i} className="flex justify-between text-sm">
+                              <span>{item.quantity}x {item.name}</span>
+                              {item.price && <span className="font-medium">GHS {(item.price * item.quantity).toFixed(2)}</span>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-muted/30 rounded-3xl border border-border/50">
+                <p className="text-muted-foreground">No orders yet.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="saved" className="outline-none">
+            {savedPlaces?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedPlaces.map(saved => saved.listing && (
+                  <ListingCard key={saved.id} listing={saved.listing} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-muted/30 rounded-3xl border border-border/50">
+                <p className="text-muted-foreground">No saved places yet.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="reviews" className="space-y-4 outline-none">
+            {reviews?.reviews?.length ? (
+              <div className="grid gap-4">
+                {reviews.reviews.map(review => (
+                  <Card key={review.id} className="border-border/50 shadow-sm">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="font-bold text-lg">{review.listingName}</h3>
+                          <p className="text-sm text-muted-foreground">{format(new Date(review.createdAt), "MMM d, yyyy")} • Visited for {review.visitedFor}</p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-secondary/10 px-2 py-1 rounded-md">
+                          <Star className="w-4 h-4 fill-secondary text-secondary" />
+                          <span className="font-bold text-secondary-foreground">{review.rating.toFixed(1)}</span>
+                        </div>
+                      </div>
+                      <p className="text-foreground">{review.comment}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-muted/30 rounded-3xl border border-border/50">
+                <p className="text-muted-foreground">No reviews written yet.</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="profile" className="outline-none">
+            <Card className="max-w-xl border-border/50 shadow-sm">
+              <CardHeader>
+                <CardTitle>Profile Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Name</label>
+                  <p className="text-lg font-medium">{user.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-lg font-medium">{user.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                  <p className="text-lg font-medium">{user.phone}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">City</label>
+                  <p className="text-lg font-medium">{user.city}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
+  );
+}

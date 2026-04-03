@@ -3,20 +3,40 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ChowHub Ghana - Food & Dining Discovery Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: listings
+    description: Listing discovery and management
+  - name: menu
+    description: Menu items
+  - name: reservations
+    description: Reservations
+  - name: orders
+    description: Orders
+  - name: reviews
+    description: Reviews
+  - name: saved
+    description: Saved places
+  - name: vendors
+    description: Vendor portal
+  - name: admin
+    description: Admin portal
+  - name: dashboard
+    description: Dashboard and analytics
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +44,1165 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ──
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me/update:
+    patch:
+      operationId: updateUserProfile
+      tags: [auth]
+      summary: Update user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ── Vendor Auth ──
+  /auth/vendor/register:
+    post:
+      operationId: registerVendor
+      tags: [auth]
+      summary: Register a new vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterVendorBody"
+      responses:
+        "201":
+          description: Vendor created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorAuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/vendor/login:
+    post:
+      operationId: loginVendor
+      tags: [auth]
+      summary: Login vendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorAuthResponse"
+
+  /auth/vendor/me:
+    get:
+      operationId: getCurrentVendor
+      tags: [auth]
+      summary: Get current vendor
+      responses:
+        "200":
+          description: Current vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  # ── Admin Auth ──
+  /auth/admin/login:
+    post:
+      operationId: loginAdmin
+      tags: [auth]
+      summary: Login admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  # ── Listings (Public) ──
+  /listings:
+    get:
+      operationId: searchListings
+      tags: [listings]
+      summary: Search and filter listings
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: cuisine_type
+          in: query
+          schema:
+            type: string
+          description: Comma-separated cuisine types
+        - name: meal_period
+          in: query
+          schema:
+            type: string
+          description: Comma-separated meal periods
+        - name: price_range
+          in: query
+          schema:
+            type: string
+        - name: dining_style
+          in: query
+          schema:
+            type: string
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: area
+          in: query
+          schema:
+            type: string
+        - name: features
+          in: query
+          schema:
+            type: string
+          description: Comma-separated features
+        - name: open_now
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: accepts_reservations
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: accepts_orders
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+        - name: min_rating
+          in: query
+          schema:
+            type: number
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [highest_rated, most_reviewed, newest, featured, price_low, price_high]
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingSearchResponse"
+
+  /listings/featured:
+    get:
+      operationId: getFeaturedListings
+      tags: [listings]
+      summary: Get featured/premium listings
+      responses:
+        "200":
+          description: Featured listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /listings/recent:
+    get:
+      operationId: getRecentListings
+      tags: [listings]
+      summary: Get recently added listings
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Recent listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /listings/top-rated:
+    get:
+      operationId: getTopRatedListings
+      tags: [listings]
+      summary: Get top rated listings
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Top rated listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /listings/nearby:
+    get:
+      operationId: getNearbyListings
+      tags: [listings]
+      summary: Get listings near coordinates
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+            default: 5
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Nearby listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /listings/categories-count:
+    get:
+      operationId: getCategoriesCount
+      tags: [dashboard]
+      summary: Get listing count per category
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryCount"
+
+  /listings/cities-count:
+    get:
+      operationId: getCitiesCount
+      tags: [dashboard]
+      summary: Get listing count per city
+      responses:
+        "200":
+          description: City counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CityCount"
+
+  /listings/cuisines-count:
+    get:
+      operationId: getCuisinesCount
+      tags: [dashboard]
+      summary: Get listing count per cuisine type
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cuisine counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CuisineCount"
+
+  /listings/{slug}:
+    get:
+      operationId: getListingBySlug
+      tags: [listings]
+      summary: Get listing detail by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listing detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /listings/{listingId}/menu:
+    get:
+      operationId: getListingMenu
+      tags: [menu]
+      summary: Get menu items for a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+
+  /listings/{listingId}/reviews:
+    get:
+      operationId: getListingReviews
+      tags: [reviews]
+      summary: Get reviews for a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewsResponse"
+
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Create a review
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReviewBody"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: Already reviewed or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Reservations ──
+  /reservations:
+    post:
+      operationId: createReservation
+      tags: [reservations]
+      summary: Create a reservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReservationBody"
+      responses:
+        "201":
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /reservations/mine:
+    get:
+      operationId: getMyReservations
+      tags: [reservations]
+      summary: Get current user reservations
+      responses:
+        "200":
+          description: User reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+
+  # ── Orders ──
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/mine:
+    get:
+      operationId: getMyOrders
+      tags: [orders]
+      summary: Get current user orders
+      responses:
+        "200":
+          description: User orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  # ── Saved Places ──
+  /saved:
+    get:
+      operationId: getSavedPlaces
+      tags: [saved]
+      summary: Get saved places
+      responses:
+        "200":
+          description: Saved places
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedPlace"
+
+  /saved/{listingId}:
+    post:
+      operationId: saveListing
+      tags: [saved]
+      summary: Save a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedPlace"
+
+    delete:
+      operationId: unsaveListing
+      tags: [saved]
+      summary: Unsave a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Unsaved
+
+  # ── User Reviews ──
+  /reviews/mine:
+    get:
+      operationId: getMyReviews
+      tags: [reviews]
+      summary: Get current user reviews
+      responses:
+        "200":
+          description: User reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  # ── Vendor Portal ──
+  /vendor/listing:
+    get:
+      operationId: getVendorListing
+      tags: [vendors]
+      summary: Get vendor's listing
+      responses:
+        "200":
+          description: Vendor listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+        "404":
+          description: No listing yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      operationId: createVendorListing
+      tags: [vendors]
+      summary: Create vendor listing (onboarding)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListingBody"
+      responses:
+        "201":
+          description: Listing created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+
+    patch:
+      operationId: updateVendorListing
+      tags: [vendors]
+      summary: Update vendor listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingBody"
+      responses:
+        "200":
+          description: Listing updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+
+  /vendor/photos:
+    get:
+      operationId: getVendorPhotos
+      tags: [vendors]
+      summary: Get vendor listing photos
+      responses:
+        "200":
+          description: Photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingPhoto"
+
+    post:
+      operationId: addVendorPhoto
+      tags: [vendors]
+      summary: Add photo to listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddPhotoBody"
+      responses:
+        "201":
+          description: Photo added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingPhoto"
+
+  /vendor/photos/{photoId}:
+    delete:
+      operationId: deleteVendorPhoto
+      tags: [vendors]
+      summary: Delete a photo
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /vendor/menu:
+    get:
+      operationId: getVendorMenu
+      tags: [vendors]
+      summary: Get vendor menu items
+      responses:
+        "200":
+          description: Menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+
+    post:
+      operationId: addVendorMenuItem
+      tags: [vendors]
+      summary: Add menu item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMenuItemBody"
+      responses:
+        "201":
+          description: Menu item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+
+  /vendor/menu/{itemId}:
+    patch:
+      operationId: updateVendorMenuItem
+      tags: [vendors]
+      summary: Update menu item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMenuItemBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+
+    delete:
+      operationId: deleteVendorMenuItem
+      tags: [vendors]
+      summary: Delete menu item
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /vendor/reservations:
+    get:
+      operationId: getVendorReservations
+      tags: [vendors]
+      summary: Get vendor reservations
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reservation"
+
+  /vendor/reservations/{reservationId}/status:
+    patch:
+      operationId: updateReservationStatus
+      tags: [vendors]
+      summary: Confirm or decline reservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+
+  /vendor/orders:
+    get:
+      operationId: getVendorOrders
+      tags: [vendors]
+      summary: Get vendor orders
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  /vendor/orders/{orderId}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [vendors]
+      summary: Update order status
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /vendor/reviews:
+    get:
+      operationId: getVendorReviews
+      tags: [vendors]
+      summary: Get reviews for vendor listing
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /vendor/stats:
+    get:
+      operationId: getVendorStats
+      tags: [vendors]
+      summary: Get vendor dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorStats"
+
+  # ── Admin Portal ──
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get platform-wide stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/vendors:
+    get:
+      operationId: getAdminVendors
+      tags: [admin]
+      summary: Get all vendors
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vendor"
+
+  /admin/vendors/{vendorId}/approve:
+    patch:
+      operationId: approveVendor
+      tags: [admin]
+      summary: Approve a vendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /admin/vendors/{vendorId}/reject:
+    patch:
+      operationId: rejectVendor
+      tags: [admin]
+      summary: Reject a vendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /admin/vendors/{vendorId}/plan:
+    patch:
+      operationId: updateVendorPlan
+      tags: [admin]
+      summary: Set vendor plan
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVendorPlanBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /admin/listings:
+    get:
+      operationId: getAdminListings
+      tags: [admin]
+      summary: Get all listings (admin)
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ListingCard"
+
+  /admin/listings/{listingId}/feature:
+    patch:
+      operationId: toggleListingFeatured
+      tags: [admin]
+      summary: Toggle listing featured status
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingCard"
+
+  /admin/listings/{listingId}/status:
+    patch:
+      operationId: updateListingStatus
+      tags: [admin]
+      summary: Update listing status
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingStatusBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingCard"
+
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: Get all users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/reviews:
+    get:
+      operationId: getAdminReviews
+      tags: [admin]
+      summary: Get all reviews (admin)
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /admin/reviews/{reviewId}:
+    delete:
+      operationId: deleteReview
+      tags: [admin]
+      summary: Delete inappropriate review
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +1213,812 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    # ── Auth Schemas ──
+    RegisterUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        city:
+          type: string
+      required: [name, email, phone, password, city]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    VendorAuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        vendor:
+          $ref: "#/components/schemas/Vendor"
+      required: [token, vendor]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        city:
+          type: string
+        role:
+          type: string
+        createdAt:
+          type: string
+      required: [id, name, email, phone, city, createdAt]
+
+    RegisterVendorBody:
+      type: object
+      properties:
+        businessName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+      required: [businessName, email, phone, password]
+
+    Vendor:
+      type: object
+      properties:
+        id:
+          type: string
+        businessName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+        plan:
+          type: string
+        planExpiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, businessName, email, phone, status, plan, createdAt]
+
+    # ── Listing Schemas ──
+    ListingCard:
+      type: object
+      properties:
+        id:
+          type: string
+        vendorId:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        cuisineType:
+          type: array
+          items:
+            type: string
+        diningStyle:
+          type: string
+        mealPeriod:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        averageRating:
+          type: number
+        totalReviews:
+          type: integer
+        isFeatured:
+          type: boolean
+        isVerified:
+          type: boolean
+        status:
+          type: string
+        coverPhoto:
+          type: ["string", "null"]
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        acceptsReservations:
+          type: boolean
+        acceptsOrders:
+          type: boolean
+        openingHours:
+          type: object
+        lat:
+          type: number
+        lng:
+          type: number
+        distance:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+      required: [id, name, slug, category, cuisineType, priceRange, city, area, averageRating, totalReviews, isFeatured, status, createdAt]
+
+    ListingDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        vendorId:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        cuisineType:
+          type: array
+          items:
+            type: string
+        diningStyle:
+          type: string
+        mealPeriod:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        neighbourhood:
+          type: string
+        address:
+          type: string
+        landmark:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        website:
+          type: ["string", "null"]
+        instagram:
+          type: ["string", "null"]
+        twitter:
+          type: ["string", "null"]
+        facebook:
+          type: ["string", "null"]
+        tiktok:
+          type: ["string", "null"]
+        openingHours:
+          type: object
+        features:
+          type: array
+          items:
+            type: string
+        dressCode:
+          type: string
+        acceptsReservations:
+          type: boolean
+        acceptsOrders:
+          type: boolean
+        averageRating:
+          type: number
+        totalReviews:
+          type: integer
+        isFeatured:
+          type: boolean
+        isVerified:
+          type: boolean
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+        status:
+          type: string
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingPhoto"
+        createdAt:
+          type: string
+      required: [id, name, slug, description, category, cuisineType, diningStyle, mealPeriod, priceRange, city, area, address, phone, whatsapp, openingHours, features, dressCode, acceptsReservations, acceptsOrders, averageRating, totalReviews, isFeatured, isVerified, status, photos, createdAt]
+
+    ListingSearchResponse:
+      type: object
+      properties:
+        listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingCard"
+        total:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+      required: [listings, total, page, totalPages]
+
+    ListingPhoto:
+      type: object
+      properties:
+        id:
+          type: string
+        listingId:
+          type: string
+        url:
+          type: string
+        isCover:
+          type: boolean
+        displayOrder:
+          type: integer
+      required: [id, listingId, url, isCover, displayOrder]
+
+    CreateListingBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        cuisineType:
+          type: array
+          items:
+            type: string
+        diningStyle:
+          type: string
+        mealPeriod:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        neighbourhood:
+          type: string
+        address:
+          type: string
+        landmark:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        website:
+          type: ["string", "null"]
+        instagram:
+          type: ["string", "null"]
+        twitter:
+          type: ["string", "null"]
+        facebook:
+          type: ["string", "null"]
+        tiktok:
+          type: ["string", "null"]
+        openingHours:
+          type: object
+        features:
+          type: array
+          items:
+            type: string
+        dressCode:
+          type: string
+        acceptsReservations:
+          type: boolean
+        acceptsOrders:
+          type: boolean
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+      required: [name, description, category, cuisineType, diningStyle, mealPeriod, priceRange, city, area, address, phone, whatsapp, openingHours, features, dressCode, acceptsReservations, acceptsOrders]
+
+    UpdateListingBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        cuisineType:
+          type: array
+          items:
+            type: string
+        diningStyle:
+          type: string
+        mealPeriod:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+        neighbourhood:
+          type: string
+        address:
+          type: string
+        landmark:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        phone:
+          type: string
+        whatsapp:
+          type: string
+        website:
+          type: ["string", "null"]
+        instagram:
+          type: ["string", "null"]
+        twitter:
+          type: ["string", "null"]
+        facebook:
+          type: ["string", "null"]
+        tiktok:
+          type: ["string", "null"]
+        openingHours:
+          type: object
+        features:
+          type: array
+          items:
+            type: string
+        dressCode:
+          type: string
+        acceptsReservations:
+          type: boolean
+        acceptsOrders:
+          type: boolean
+        metaTitle:
+          type: string
+        metaDescription:
+          type: string
+
+    # ── Menu ──
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: string
+        listingId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: ["number", "null"]
+        category:
+          type: string
+        photoUrl:
+          type: ["string", "null"]
+        isAvailable:
+          type: boolean
+        isPopular:
+          type: boolean
+      required: [id, listingId, name, description, category, isAvailable, isPopular]
+
+    CreateMenuItemBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: ["number", "null"]
+        category:
+          type: string
+        photoUrl:
+          type: ["string", "null"]
+        isAvailable:
+          type: boolean
+        isPopular:
+          type: boolean
+      required: [name, description, category]
+
+    UpdateMenuItemBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: ["number", "null"]
+        category:
+          type: string
+        photoUrl:
+          type: ["string", "null"]
+        isAvailable:
+          type: boolean
+        isPopular:
+          type: boolean
+
+    AddPhotoBody:
+      type: object
+      properties:
+        url:
+          type: string
+        isCover:
+          type: boolean
+        displayOrder:
+          type: integer
+      required: [url]
+
+    # ── Reservation ──
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+        listingId:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        partySize:
+          type: integer
+        occasion:
+          type: ["string", "null"]
+        specialRequests:
+          type: ["string", "null"]
+        status:
+          type: string
+        listingName:
+          type: ["string", "null"]
+        userName:
+          type: ["string", "null"]
+        userPhone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, listingId, userId, date, time, partySize, status, createdAt]
+
+    CreateReservationBody:
+      type: object
+      properties:
+        listingId:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        partySize:
+          type: integer
+        occasion:
+          type: ["string", "null"]
+        specialRequests:
+          type: ["string", "null"]
+      required: [listingId, date, time, partySize]
+
+    UpdateStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmed, declined]
+      required: [status]
+
+    # ── Order ──
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        listingId:
+          type: string
+        userId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        orderType:
+          type: string
+        deliveryAddress:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        status:
+          type: string
+        listingName:
+          type: ["string", "null"]
+        userName:
+          type: ["string", "null"]
+        userPhone:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, listingId, userId, items, orderType, status, createdAt]
+
+    OrderItem:
+      type: object
+      properties:
+        menuItemId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: ["number", "null"]
+      required: [menuItemId, name, quantity]
+
+    CreateOrderBody:
+      type: object
+      properties:
+        listingId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        orderType:
+          type: string
+          enum: [delivery, pickup, dine_in]
+        deliveryAddress:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+      required: [listingId, items, orderType]
+
+    UpdateOrderStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmed, rejected, completed]
+      required: [status]
+
+    # ── Review ──
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        listingId:
+          type: string
+        userId:
+          type: string
+        rating:
+          type: integer
+        foodRating:
+          type: integer
+        serviceRating:
+          type: integer
+        ambienceRating:
+          type: integer
+        valueRating:
+          type: integer
+        comment:
+          type: string
+        visitedFor:
+          type: string
+        userName:
+          type: ["string", "null"]
+        listingName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, listingId, userId, rating, foodRating, serviceRating, ambienceRating, valueRating, comment, visitedFor, createdAt]
+
+    CreateReviewBody:
+      type: object
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        foodRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        serviceRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        ambienceRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        valueRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        visitedFor:
+          type: string
+      required: [rating, foodRating, serviceRating, ambienceRating, valueRating, comment, visitedFor]
+
+    ReviewsResponse:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+        averageRating:
+          type: number
+        avgFood:
+          type: number
+        avgService:
+          type: number
+        avgAmbience:
+          type: number
+        avgValue:
+          type: number
+        total:
+          type: integer
+      required: [reviews, averageRating, avgFood, avgService, avgAmbience, avgValue, total]
+
+    # ── Saved Place ──
+    SavedPlace:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        listingId:
+          type: string
+        listing:
+          $ref: "#/components/schemas/ListingCard"
+        createdAt:
+          type: string
+      required: [id, userId, listingId, createdAt]
+
+    # ── Dashboard / Wow schemas ──
+    CategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+      required: [category, count]
+
+    CityCount:
+      type: object
+      properties:
+        city:
+          type: string
+        count:
+          type: integer
+      required: [city, count]
+
+    CuisineCount:
+      type: object
+      properties:
+        cuisineType:
+          type: string
+        count:
+          type: integer
+      required: [cuisineType, count]
+
+    VendorStats:
+      type: object
+      properties:
+        totalReservationsToday:
+          type: integer
+        totalOrdersToday:
+          type: integer
+        pendingReservations:
+          type: integer
+        pendingOrders:
+          type: integer
+        averageRating:
+          type: number
+        totalReviews:
+          type: integer
+        profileViews:
+          type: integer
+      required: [totalReservationsToday, totalOrdersToday, pendingReservations, pendingOrders, averageRating, totalReviews]
+
+    AdminStats:
+      type: object
+      properties:
+        totalListings:
+          type: integer
+        totalUsers:
+          type: integer
+        totalVendors:
+          type: integer
+        pendingVendors:
+          type: integer
+        totalReservations:
+          type: integer
+        totalOrders:
+          type: integer
+        totalReviews:
+          type: integer
+      required: [totalListings, totalUsers, totalVendors, pendingVendors, totalReservations, totalOrders, totalReviews]
+
+    UpdateVendorPlanBody:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, premium]
+        planExpiresAt:
+          type: ["string", "null"]
+      required: [plan]
+
+    UpdateListingStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, inactive, pending]
+      required: [status]
