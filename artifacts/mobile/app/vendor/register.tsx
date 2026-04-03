@@ -1,0 +1,63 @@
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, ScrollView, Platform } from "react-native";
+import { useColors } from "@/hooks/useColors";
+import { useRegisterVendor } from "@workspace/api-client-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+
+export default function VendorRegisterScreen() {
+  const colors = useColors();
+  const { loginVendor } = useAuth();
+  const router = useRouter();
+  const isWeb = Platform.OS === "web";
+  const [businessName, setBusinessName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const mutation = useRegisterVendor();
+
+  const handleRegister = () => {
+    mutation.mutate(
+      { data: { businessName, email, phone, password } },
+      {
+        onSuccess: async (res) => {
+          await loginVendor(res.token, res.vendor as any);
+          router.replace("/vendor/dashboard");
+        },
+      }
+    );
+  };
+
+  return (
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 40 : 40, paddingBottom: 60 }}>
+      <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Register Restaurant</Text>
+      <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>List your restaurant on ChowHub</Text>
+      <View style={styles.form}>
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Business Name</Text>
+        <TextInput value={businessName} onChangeText={setBusinessName} placeholder="Your Restaurant" placeholderTextColor={colors.mutedForeground} style={[styles.input, { borderColor: colors.border, color: colors.foreground, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]} />
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Email</Text>
+        <TextInput value={email} onChangeText={setEmail} placeholder="vendor@example.com" placeholderTextColor={colors.mutedForeground} keyboardType="email-address" autoCapitalize="none" style={[styles.input, { borderColor: colors.border, color: colors.foreground, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]} />
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Phone</Text>
+        <TextInput value={phone} onChangeText={setPhone} placeholder="+233..." placeholderTextColor={colors.mutedForeground} keyboardType="phone-pad" style={[styles.input, { borderColor: colors.border, color: colors.foreground, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]} />
+        <Text style={[styles.label, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Password</Text>
+        <TextInput value={password} onChangeText={setPassword} placeholder="Min 6 characters" placeholderTextColor={colors.mutedForeground} secureTextEntry style={[styles.input, { borderColor: colors.border, color: colors.foreground, borderRadius: colors.radius, fontFamily: "Inter_400Regular" }]} />
+        {mutation.isError && <Text style={[styles.error, { color: colors.destructive, fontFamily: "Inter_400Regular" }]}>Registration failed</Text>}
+        <Pressable onPress={handleRegister} disabled={mutation.isPending || !businessName || !email || !password || !phone} style={[styles.btn, { backgroundColor: colors.primary, borderRadius: colors.radius, opacity: mutation.isPending ? 0.7 : 1 }]}>
+          {mutation.isPending ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.btnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>Register</Text>}
+        </Pressable>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: 24 },
+  title: { fontSize: 24, marginBottom: 4 },
+  subtitle: { fontSize: 14, marginBottom: 28 },
+  form: { gap: 4 },
+  label: { fontSize: 13, marginBottom: 4, marginTop: 12 },
+  input: { borderWidth: 1, height: 44, paddingHorizontal: 14, fontSize: 14 },
+  error: { fontSize: 13, marginTop: 4 },
+  btn: { height: 44, alignItems: "center", justifyContent: "center", marginTop: 20 },
+  btnText: { fontSize: 15 },
+});

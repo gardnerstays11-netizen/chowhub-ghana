@@ -109,7 +109,7 @@
   --input: 40 15% 88%;
   --ring: 152 45% 22%;
 
-  --app-font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --app-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --app-font-display: 'Fraunces', Georgia, serif;
   --app-font-mono: 'DM Mono', ui-monospace, monospace;
   --radius: 0.5rem;

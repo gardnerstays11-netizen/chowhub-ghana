@@ -23,6 +23,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 ### Artifacts
 - `artifacts/api-server` — Express API server (port 8080)
 - `artifacts/chowdeck` — React + Vite web app (previewPath `/`)
+- `artifacts/mobile` — Expo React Native mobile app (port 18115, previewPath `/mobile`)
 - `artifacts/mockup-sandbox` — Component Preview Server
 
 ### Libraries
@@ -56,7 +57,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 
 ### Design System
 - **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
-- **Fonts**: Fraunces (display/headings — variable optical-size serif), DM Sans (body)
+- **Fonts**: Fraunces (display/headings — variable optical-size serif), Inter (body). Mobile uses Inter for all text (400/500/600/700 weights via @expo-google-fonts/inter)
 - **Border radius**: `0.5rem` base — tight, editorial feel; no rounded-3xl/rounded-full on containers
 - **Theme**: Clean editorial, warm Ghanaian palette, minimal badge usage
 
@@ -87,6 +88,15 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/vendor/dashboard` — Vendor dashboard (manage listing, menu, orders, reservations)
 - `/admin/login` — Admin login
 - `/admin/dashboard` — Admin dashboard (stats, vendor approval, listing moderation)
+
+## Mobile App (Expo)
+
+- **Tabs**: Home (featured/recent), Search, Saved, Profile
+- **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
+- **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
+- **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`
+- **Tab bar**: NativeTabs with liquid glass (iOS 26+), classic BlurView Tabs fallback
+- **Design**: Same color palette as web (deep green/amber/cream), Inter font throughout
 
 ## Vite Proxy
 
