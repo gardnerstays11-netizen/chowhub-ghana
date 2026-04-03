@@ -264,6 +264,11 @@ paths:
           schema:
             type: string
           description: Comma-separated features
+        - name: occasion
+          in: query
+          schema:
+            type: string
+          description: Occasion filter (e.g. date_night, birthday_dinner, family_outing)
         - name: open_now
           in: query
           schema:

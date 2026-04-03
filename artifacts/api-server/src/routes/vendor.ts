@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, sql, asc, gte } from "drizzle-orm";
 import { db, listingsTable, listingPhotosTable, menuItemsTable, reservationsTable, ordersTable, reviewsTable, usersTable, listingViewsTable } from "@workspace/db";
-import { vendorAuthMiddleware } from "../lib/auth";
+import { vendorAuthMiddleware, requireApprovedVendor } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -207,7 +207,7 @@ router.delete("/vendor/menu/:itemId", vendorAuthMiddleware, async (req, res): Pr
   res.sendStatus(204);
 });
 
-router.get("/vendor/reservations", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.get("/vendor/reservations", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const vendorId = (req as any).user.id;
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.vendorId, vendorId));
   if (!listing) { res.json([]); return; }
@@ -234,7 +234,7 @@ router.get("/vendor/reservations", vendorAuthMiddleware, async (req, res): Promi
   })));
 });
 
-router.patch("/vendor/reservations/:reservationId/status", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.patch("/vendor/reservations/:reservationId/status", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const reservationId = Array.isArray(req.params.reservationId) ? req.params.reservationId[0] : req.params.reservationId;
   const [reservation] = await db.update(reservationsTable).set({ status: req.body.status })
     .where(eq(reservationsTable.id, reservationId)).returning();
@@ -248,7 +248,7 @@ router.patch("/vendor/reservations/:reservationId/status", vendorAuthMiddleware,
   });
 });
 
-router.get("/vendor/orders", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.get("/vendor/orders", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const vendorId = (req as any).user.id;
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.vendorId, vendorId));
   if (!listing) { res.json([]); return; }
@@ -275,7 +275,7 @@ router.get("/vendor/orders", vendorAuthMiddleware, async (req, res): Promise<voi
   })));
 });
 
-router.patch("/vendor/orders/:orderId/status", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.patch("/vendor/orders/:orderId/status", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const orderId = Array.isArray(req.params.orderId) ? req.params.orderId[0] : req.params.orderId;
   const [order] = await db.update(ordersTable).set({ status: req.body.status })
     .where(eq(ordersTable.id, orderId)).returning();
@@ -289,7 +289,7 @@ router.patch("/vendor/orders/:orderId/status", vendorAuthMiddleware, async (req,
   });
 });
 
-router.get("/vendor/reviews", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.get("/vendor/reviews", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const vendorId = (req as any).user.id;
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.vendorId, vendorId));
   if (!listing) { res.json([]); return; }
@@ -312,7 +312,7 @@ router.get("/vendor/reviews", vendorAuthMiddleware, async (req, res): Promise<vo
   })));
 });
 
-router.get("/vendor/stats", vendorAuthMiddleware, async (req, res): Promise<void> => {
+router.get("/vendor/stats", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
   const vendorId = (req as any).user.id;
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.vendorId, vendorId));
   if (!listing) {

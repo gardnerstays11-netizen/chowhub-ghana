@@ -2,11 +2,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
 import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, Image, Store, MapPin, Users, CreditCard, Settings, Tag } from "lucide-react";
+import { LogOut, LayoutDashboard, Image, Store, MapPin, Users, CreditCard, Settings, Tag, Sparkles } from "lucide-react";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/categories", label: "Categories", icon: Tag },
+  { href: "/admin/editors-picks", label: "Editor's Picks", icon: Sparkles },
   { href: "/admin/partners", label: "Partners", icon: Image },
   { href: "/admin/vendors", label: "Vendors", icon: Store },
   { href: "/admin/listings", label: "Listings", icon: MapPin },

@@ -139,6 +139,26 @@ export default function HomeScreen() {
   );
   const { data: quickBites } = useSearchListings({ category: "street_food", limit: 8 });
   const { data: cafes } = useSearchListings({ category: "cafe_bakery", limit: 8 });
+  const { data: hiddenGems } = useQuery({
+    queryKey: ["hidden-gems"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${baseUrl}/api/listings/hidden-gems?limit=8`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch { return []; }
+    },
+  });
+  const { data: editorsPicks } = useQuery({
+    queryKey: ["editors-picks"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${baseUrl}/api/editors-picks`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch { return []; }
+    },
+  });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -336,6 +356,61 @@ export default function HomeScreen() {
               <EventCard key={e.id} event={e} />
             ))}
           </HorizontalCarousel>
+        </View>
+      )}
+
+      {hiddenGems && hiddenGems.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            icon="eye"
+            iconColor="#7c3aed"
+            title="Hidden Gems"
+            subtitle="Highly rated, under the radar"
+          />
+          <HorizontalCarousel>
+            {hiddenGems.map((l: any) => (
+              <DiscoverCard key={l.id} listing={l} variant="standard" />
+            ))}
+          </HorizontalCarousel>
+        </View>
+      )}
+
+      {editorsPicks && editorsPicks.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            icon="bookmark"
+            iconColor={colors.primary as string}
+            title="Editor's Picks"
+            subtitle="Curated by the ChowHub team"
+          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContent}>
+            {editorsPicks.map((pick: any) => (
+              <Pressable
+                key={pick.id}
+                onPress={() => router.push({ pathname: "/search", params: { q: pick.title } })}
+                style={({ pressed }) => [
+                  {
+                    width: 220, borderRadius: 14, padding: 16, marginRight: 12,
+                    backgroundColor: colors.card, opacity: pressed ? 0.9 : 1,
+                    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+                  },
+                ]}
+              >
+                <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: colors.foreground, marginBottom: 4 }}>
+                  {pick.title}
+                </Text>
+                {pick.description ? (
+                  <Text numberOfLines={2} style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 8 }}>
+                    {pick.description}
+                  </Text>
+                ) : null}
+                <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.secondary }}>
+                  {pick.listingCount} {pick.listingCount === 1 ? "place" : "places"}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       )}
 

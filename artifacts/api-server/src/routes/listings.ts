@@ -43,7 +43,7 @@ function formatListingCard(listing: any, coverPhoto?: string | null, distance?: 
 router.get("/listings", async (req, res): Promise<void> => {
   const {
     q, category, cuisine_type, meal_period, price_range,
-    dining_style, city, area, features,
+    dining_style, city, area, features, occasion,
     open_now, accepts_reservations, accepts_orders,
     min_rating, sort, lat, lng,
     page: pageStr, limit: limitStr
@@ -82,6 +82,10 @@ router.get("/listings", async (req, res): Promise<void> => {
   if (features) {
     const featureList = (features as string).split(",");
     conditions.push(sql`${listingsTable.features} @> ${featureList}`);
+  }
+  if (occasion) {
+    const occasions = (occasion as string).split(",");
+    conditions.push(sql`${listingsTable.occasions} && ARRAY[${sql.join(occasions.map(o => sql`${o}`), sql`, `)}]::text[]`);
   }
   if (accepts_reservations === "true") conditions.push(eq(listingsTable.acceptsReservations, true));
   if (accepts_orders === "true") conditions.push(eq(listingsTable.acceptsOrders, true));
@@ -165,6 +169,28 @@ router.get("/listings/top-rated", async (req, res): Promise<void> => {
   const listings = await db.select().from(listingsTable)
     .where(and(...conditions))
     .orderBy(desc(listingsTable.averageRating)).limit(limit);
+
+  const listingIds = listings.map(l => l.id);
+  let coverPhotos: any[] = [];
+  if (listingIds.length > 0) {
+    coverPhotos = await db.select().from(listingPhotosTable).where(
+      and(inArray(listingPhotosTable.listingId, listingIds), eq(listingPhotosTable.isCover, true))
+    );
+  }
+  const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+  res.json(listings.map(l => formatListingCard(l, coverMap.get(l.id))));
+});
+
+router.get("/listings/hidden-gems", async (req, res): Promise<void> => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 10, 20);
+  const listings = await db.select().from(listingsTable)
+    .where(and(
+      eq(listingsTable.status, "active"),
+      gte(listingsTable.averageRating, 4.0),
+      sql`${listingsTable.totalReviews} <= 5`
+    ))
+    .orderBy(desc(listingsTable.averageRating))
+    .limit(limit);
 
   const listingIds = listings.map(l => l.id);
   let coverPhotos: any[] = [];

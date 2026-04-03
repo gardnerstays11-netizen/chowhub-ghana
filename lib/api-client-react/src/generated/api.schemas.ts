@@ -744,6 +744,10 @@ export type SearchListingsParams = {
    * Comma-separated features
    */
   features?: string;
+  /**
+   * Occasion filter (e.g. date_night, birthday_dinner, family_outing)
+   */
+  occasion?: string;
   open_now?: SearchListingsOpenNow;
   accepts_reservations?: SearchListingsAcceptsReservations;
   accepts_orders?: SearchListingsAcceptsOrders;

@@ -1,10 +1,10 @@
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, ArrowRight, Navigation, Loader2 } from "lucide-react";
+import { Search, MapPin, ArrowRight, Navigation, Loader2, TrendingUp, Sparkles, Heart, Star, Calendar, Gem } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete, useGetPartners } from "@workspace/api-client-react";
+import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete, useGetPartners, useGetTrendingListings, useGetUpcomingEvents } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "@/components/listing-card";
 import { usePageMeta } from "@/hooks/use-page-meta";
@@ -37,6 +37,42 @@ function useCategories() {
     },
   });
 }
+
+function useHiddenGems() {
+  return useQuery({
+    queryKey: ["hidden-gems"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/listings/hidden-gems?limit=6`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch { return []; }
+    },
+  });
+}
+
+function useEditorsPicks() {
+  return useQuery({
+    queryKey: ["editors-picks"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`${API_BASE}/editors-picks`);
+        if (!res.ok) return [];
+        return res.json();
+      } catch { return []; }
+    },
+  });
+}
+
+const OCCASIONS = [
+  { value: "date_night", label: "Date Night", icon: Heart },
+  { value: "birthday_dinner", label: "Birthday Dinner", icon: Sparkles },
+  { value: "family_outing", label: "Family Outing", icon: Heart },
+  { value: "business_lunch", label: "Business Lunch", icon: Star },
+  { value: "casual_hangout", label: "Casual Hangout", icon: Star },
+  { value: "anniversary", label: "Anniversary", icon: Heart },
+  { value: "group_outing", label: "Group Outing", icon: Star },
+];
 
 function useGeolocation() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -88,6 +124,10 @@ export default function Home() {
 
   const { data: partners } = useGetPartners();
   const { data: categories } = useCategories();
+  const { data: trending } = useGetTrendingListings({ limit: 6 });
+  const { data: hiddenGems } = useHiddenGems();
+  const { data: editorsPicks } = useEditorsPicks();
+  const { data: events } = useGetUpcomingEvents({ limit: 6 });
 
   usePageMeta({
     title: "ChowHub Ghana — Discover the Best Restaurants & Food Spots",
@@ -254,6 +294,24 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-10">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl mb-5">Find by occasion</h2>
+          <div className="flex flex-wrap gap-2.5">
+            {OCCASIONS.map(occ => (
+              <Link
+                key={occ.value}
+                href={`/search?occasion=${occ.value}`}
+                className="group inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-lg hover:border-primary/30 hover:bg-primary/[0.03] transition-colors"
+              >
+                <occ.icon className="w-4 h-4 text-secondary" />
+                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{occ.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-14 border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-6">
@@ -307,6 +365,115 @@ export default function Home() {
           ) : null}
         </div>
       </section>
+
+      {trending && trending.length > 0 && (
+        <section className="py-14 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl">Trending now</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">Popular this week based on reviews and visits</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {trending.slice(0, 6).map((listing: any) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hiddenGems && hiddenGems.length > 0 && (
+        <section className="py-14 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-violet-500/10 flex items-center justify-center">
+                  <Gem className="w-4 h-4 text-violet-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl">Hidden gems</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">Highly rated spots that fly under the radar</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {hiddenGems.slice(0, 6).map((listing: any) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {events && events.length > 0 && (
+        <section className="py-14 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-secondary/10 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-secondary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl">Upcoming events</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">Live music, special menus, and more happening soon</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.slice(0, 6).map((event: any) => (
+                <div key={event.id} className="border border-border rounded-lg p-5 hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 text-xs text-secondary font-medium mb-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(event.eventDate).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">{event.title}</h3>
+                  {event.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{event.description}</p>}
+                  <span className="text-xs capitalize px-2 py-0.5 rounded bg-muted text-muted-foreground">{event.category}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {editorsPicks && editorsPicks.length > 0 && (
+        <section className="py-14 border-t border-border">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl">Editor's picks</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">Curated collections by the ChowHub team</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {editorsPicks.map((pick: any) => (
+                <Link key={pick.id} href={`/search?q=${encodeURIComponent(pick.title)}`} className="group block">
+                  <div className="border border-border rounded-lg p-6 hover:border-primary/30 hover:bg-primary/[0.02] transition-colors">
+                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{pick.title}</h3>
+                    {pick.description && <p className="text-sm text-muted-foreground mb-3">{pick.description}</p>}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-secondary">{pick.listingCount} {pick.listingCount === 1 ? "place" : "places"}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {partners && partners.length > 0 && (
         <section className="py-14 border-t border-border">

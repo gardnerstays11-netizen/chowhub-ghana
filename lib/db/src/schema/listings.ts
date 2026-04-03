@@ -30,6 +30,7 @@ export const listingsTable = pgTable("listings", {
   tiktok: text("tiktok"),
   openingHours: jsonb("opening_hours").notNull().default({}),
   features: text("features").array().notNull().default([]),
+  occasions: text("occasions").array().notNull().default([]),
   dressCode: text("dress_code").notNull().default("casual"),
   acceptsReservations: boolean("accepts_reservations").notNull().default(false),
   acceptsOrders: boolean("accepts_orders").notNull().default(false),

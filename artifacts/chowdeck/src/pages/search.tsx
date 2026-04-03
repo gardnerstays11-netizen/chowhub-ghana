@@ -70,12 +70,24 @@ const DINING_STYLES = [
   { label: "Buffet", value: "buffet" },
 ];
 
+const OCCASIONS = [
+  { label: "Date Night", value: "date_night" },
+  { label: "Birthday Dinner", value: "birthday_dinner" },
+  { label: "Family Outing", value: "family_outing" },
+  { label: "Business Lunch", value: "business_lunch" },
+  { label: "Casual Hangout", value: "casual_hangout" },
+  { label: "Anniversary", value: "anniversary" },
+  { label: "Business Dinner", value: "business_dinner" },
+  { label: "Group Outing", value: "group_outing" },
+];
+
 export default function SearchPage() {
   const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : (location.split("?")[1] || ""));
   const query = searchParams.get("q") || "";
   const cityParam = searchParams.get("city") || "";
   const categoryParam = searchParams.get("category") || "";
+  const occasionParam = searchParams.get("occasion") || "";
 
   const [search, setSearch] = useState(query);
   const [debouncedSearch, setDebouncedSearch] = useState(query);
@@ -85,10 +97,11 @@ export default function SearchPage() {
   const [selectedPrice, setSelectedPrice] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
   const [selectedDiningStyle, setSelectedDiningStyle] = useState("");
+  const [selectedOccasion, setSelectedOccasion] = useState(occasionParam);
   const [acceptsReservations, setAcceptsReservations] = useState(false);
   const [acceptsOrders, setAcceptsOrders] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!occasionParam);
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: categoriesData } = useCategories();
 
@@ -121,6 +134,7 @@ export default function SearchPage() {
     price_range: selectedPrice || undefined,
     dining_style: selectedDiningStyle || undefined,
     sort: (selectedSort || undefined) as any,
+    occasion: selectedOccasion || undefined,
     accepts_reservations: acceptsReservations ? "true" : undefined,
     accepts_orders: acceptsOrders ? "true" : undefined,
     limit: 30,
@@ -166,6 +180,7 @@ export default function SearchPage() {
   const toggleCuisine = (c: string) => setSelectedCuisine(prev => prev === c ? "" : c);
   const togglePrice = (p: string) => setSelectedPrice(prev => prev === p ? "" : p);
   const toggleDiningStyle = (d: string) => setSelectedDiningStyle(prev => prev === d ? "" : d);
+  const toggleOccasion = (o: string) => setSelectedOccasion(prev => prev === o ? "" : o);
 
   const clearFilters = () => {
     setSelectedCity("");
@@ -174,6 +189,7 @@ export default function SearchPage() {
     setSelectedPrice("");
     setSelectedSort("");
     setSelectedDiningStyle("");
+    setSelectedOccasion("");
     setAcceptsReservations(false);
     setAcceptsOrders(false);
     setSearch("");
@@ -182,7 +198,7 @@ export default function SearchPage() {
 
   const activeFilterCount =
     (selectedCity ? 1 : 0) + (selectedCategory ? 1 : 0) + (selectedCuisine ? 1 : 0) +
-    (selectedPrice ? 1 : 0) + (selectedDiningStyle ? 1 : 0) +
+    (selectedPrice ? 1 : 0) + (selectedDiningStyle ? 1 : 0) + (selectedOccasion ? 1 : 0) +
     (acceptsReservations ? 1 : 0) + (acceptsOrders ? 1 : 0);
 
   return (
@@ -286,6 +302,12 @@ export default function SearchPage() {
                   ))}
                 </FilterSection>
               </div>
+
+              <FilterSection label="Occasion">
+                {OCCASIONS.map(o => (
+                  <FilterChip key={o.value} label={o.label} active={selectedOccasion === o.value} onClick={() => toggleOccasion(o.value)} />
+                ))}
+              </FilterSection>
 
               <FilterSection label="Services">
                 <FilterChip label="Accepts Reservations" active={acceptsReservations} onClick={() => setAcceptsReservations(p => !p)} />

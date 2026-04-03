@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { LogOut, LayoutDashboard, BookOpen, Calendar, Image, Star, BarChart3, Settings } from "lucide-react";
 
 const navItems = [
-  { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vendor/menu", label: "Menu", icon: BookOpen },
-  { href: "/vendor/events", label: "Events", icon: Calendar },
-  { href: "/vendor/photos", label: "Photos", icon: Image },
-  { href: "/vendor/reviews", label: "Reviews", icon: Star },
-  { href: "/vendor/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/vendor/settings", label: "Settings", icon: Settings },
+  { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard, pendingAllowed: true },
+  { href: "/vendor/menu", label: "Menu", icon: BookOpen, pendingAllowed: true },
+  { href: "/vendor/events", label: "Events", icon: Calendar, pendingAllowed: false },
+  { href: "/vendor/photos", label: "Photos", icon: Image, pendingAllowed: true },
+  { href: "/vendor/reviews", label: "Reviews", icon: Star, pendingAllowed: false },
+  { href: "/vendor/analytics", label: "Analytics", icon: BarChart3, pendingAllowed: false },
+  { href: "/vendor/settings", label: "Settings", icon: Settings, pendingAllowed: true },
 ];
 
 export default function VendorLayout({ children }: { children: ReactNode }) {
@@ -49,6 +49,15 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
         <nav className="flex gap-1 mb-6 overflow-x-auto pb-2">
           {navItems.map(item => {
             const isActive = location === item.href;
+            const disabled = vendor.status === 'pending' && !item.pendingAllowed;
+            if (disabled) {
+              return (
+                <button key={item.href} disabled className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap opacity-40 cursor-not-allowed">
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              );
+            }
             return (
               <Link key={item.href} href={item.href}>
                 <button className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>

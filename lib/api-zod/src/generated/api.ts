@@ -167,6 +167,12 @@ export const SearchListingsQueryParams = zod.object({
   city: zod.coerce.string().optional(),
   area: zod.coerce.string().optional(),
   features: zod.coerce.string().optional().describe("Comma-separated features"),
+  occasion: zod.coerce
+    .string()
+    .optional()
+    .describe(
+      "Occasion filter (e.g. date_night, birthday_dinner, family_outing)",
+    ),
   open_now: zod.enum(["true", "false"]).optional(),
   accepts_reservations: zod.enum(["true", "false"]).optional(),
   accepts_orders: zod.enum(["true", "false"]).optional(),

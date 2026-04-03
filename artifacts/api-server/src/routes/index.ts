@@ -15,6 +15,7 @@ import storageRouter from "./storage";
 import eventsRouter from "./events";
 import siteSettingsRouter from "./site-settings";
 import categoriesRouter from "./categories";
+import editorsPicksRouter from "./editors-picks";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(partnersRouter);
 router.use(storageRouter);
 router.use(eventsRouter);
 router.use(siteSettingsRouter);
+router.use(editorsPicksRouter);
 
 export default router;

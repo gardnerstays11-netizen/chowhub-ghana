@@ -30,17 +30,28 @@ const SORT_OPTIONS = [
   { label: "Newest", value: "newest" },
 ];
 
+const OCCASIONS = [
+  { label: "Date Night", value: "date_night" },
+  { label: "Birthday", value: "birthday_dinner" },
+  { label: "Family", value: "family_outing" },
+  { label: "Business", value: "business_lunch" },
+  { label: "Hangout", value: "casual_hangout" },
+  { label: "Anniversary", value: "anniversary" },
+  { label: "Group", value: "group_outing" },
+];
+
 const RECENT_SEARCHES_KEY = "chowhub_recent_searches";
 
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ category?: string }>();
+  const params = useLocalSearchParams<{ category?: string; occasion?: string }>();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(params.category || "");
   const [selectedSort, setSelectedSort] = useState("");
+  const [selectedOccasion, setSelectedOccasion] = useState(params.occasion || "");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -111,6 +122,7 @@ export default function SearchScreen() {
     q: debouncedQuery || undefined,
     category: selectedCategory || undefined,
     sort: selectedSort || undefined,
+    occasion: selectedOccasion || undefined,
     limit: 30,
   });
 
@@ -250,6 +262,33 @@ export default function SearchScreen() {
             })}
           </View>
         )}
+
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={OCCASIONS}
+          keyExtractor={(item) => item.value}
+          contentContainerStyle={{ gap: 6, paddingHorizontal: 4, paddingBottom: 10, paddingTop: 2 }}
+          renderItem={({ item }) => {
+            const active = selectedOccasion === item.value;
+            return (
+              <Pressable
+                onPress={() => setSelectedOccasion(prev => prev === item.value ? "" : item.value)}
+                style={[styles.chip, {
+                  backgroundColor: active ? "#7c3aed" : "transparent",
+                  borderColor: active ? "#7c3aed" : colors.border,
+                  paddingHorizontal: 12,
+                }]}
+              >
+                <Feather name="heart" size={10} color={active ? "#fff" : colors.mutedForeground} style={{ marginRight: 4 }} />
+                <Text style={[styles.chipText, {
+                  color: active ? "#fff" : colors.foreground,
+                  fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
+                }]}>{item.label}</Text>
+              </Pressable>
+            );
+          }}
+        />
       </View>
 
       {showRecent && recentSearches.length > 0 && !query && (

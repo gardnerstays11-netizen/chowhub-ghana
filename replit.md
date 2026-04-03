@@ -50,18 +50,20 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `site_settings` — Key-value site configuration (branding, SEO meta, analytics IDs, social links, custom scripts)
 - `listing_views` — Page view tracking per listing (listingId, userId, sessionId, ipHash, createdAt)
 - `subscription_packages` — Admin-managed subscription tiers (name, slug, price, billingCycle, features, maxPhotos, maxMenuItems, analytics access, featured badge, priority support)
+- `editors_picks` — Curated collections (title, slug, description, coverImage, listingIds jsonb, sortOrder, active)
 
 ### API Routes (under `/api`)
 - Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
-- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/popular`, `/listings/trending`, `/listings/nearby`, `/listings/autocomplete`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
-- Events: `GET /events/upcoming` (public), `GET/POST/PUT/DELETE /vendor/events`, `GET /admin/events`
+- Listings: `/listings` (search with `occasion` filter), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/popular`, `/listings/trending`, `/listings/hidden-gems`, `/listings/nearby`, `/listings/autocomplete`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Editor's Picks: `GET /editors-picks` (public active list), `GET/POST/PUT/DELETE /admin/editors-picks` (admin CRUD)
+- Events: `GET /events/upcoming` (public), `GET/POST/PUT/DELETE /vendor/events` (requires approved vendor), `GET /admin/events`
 - Search Logs: `POST /search-logs` (log search queries for analytics)
 - Menu: `/listings/:listingId/menu`
 - Reviews: `/listings/:listingId/reviews`, `/reviews/mine`
 - Reservations: `/reservations`, `/reservations/mine`
 - Orders: `/orders`, `/orders/mine`
 - Saved: `/saved`, `/saved/:listingId`
-- Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos`, `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats`
+- Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos` (accessible by pending vendors), `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats` (requires approved vendor — enforced by `requireApprovedVendor` middleware)
 - Categories: `GET /categories` (public active list), `GET/POST/PUT/DELETE /admin/categories`
 - Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`, `/admin/search-analytics`, `/admin/partners`
 - Partners: `GET /partners` (public active list), `POST/PUT/DELETE /admin/partners`
@@ -97,7 +99,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 ## Frontend Pages
 
 - `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings, "Meet Our Partners" section)
-- `/search` — Advanced search/browse with autocomplete, filters (cuisine type, price range, dining style, reservations/orders), sort (highest rated, most reviewed, newest, featured, price), search logging
+- `/search` — Advanced search/browse with autocomplete, filters (cuisine type, price range, dining style, occasion, reservations/orders), sort (highest rated, most reviewed, newest, featured, price), search logging
 - `/listings/:slug` — Listing detail (description, menu grouped by category, hours, Call Now, WhatsApp, Get Directions via Google Maps)
 - `/login`, `/register` — User auth
 - `/dashboard` — User dashboard (reservations, orders, saved, reviews)
@@ -115,6 +117,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links) — uses shared AdminLayout
 - `/admin/categories` — Category management (add, edit, delete, toggle active, reorder) — uses shared AdminLayout
 - `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits) — uses shared AdminLayout
+- `/admin/editors-picks` — Editor's Picks management (create, edit, delete, toggle active, reorder curated collections) — uses shared AdminLayout
 
 ## Mobile App (Expo)
 

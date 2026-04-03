@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { db, vendorsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const JWT_SECRET = process.env.SESSION_SECRET;
 if (!JWT_SECRET) {
@@ -65,6 +67,24 @@ export function optionalAuthMiddleware(req: Request, _res: Response, next: NextF
       (req as any).user = payload;
       (req as any).userId = payload.id;
     }
+  }
+  next();
+}
+
+export async function requireApprovedVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const vendorId = (req as any).user?.id;
+  if (!vendorId) {
+    res.status(401).json({ error: "Vendor authentication required" });
+    return;
+  }
+  const [vendor] = await db.select({ status: vendorsTable.status }).from(vendorsTable).where(eq(vendorsTable.id, vendorId));
+  if (!vendor) {
+    res.status(404).json({ error: "Vendor not found" });
+    return;
+  }
+  if (vendor.status !== "approved") {
+    res.status(403).json({ error: "Your vendor account is pending approval. This feature is available once approved." });
+    return;
   }
   next();
 }

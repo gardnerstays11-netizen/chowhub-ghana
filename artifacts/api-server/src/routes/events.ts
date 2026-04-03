@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc, asc, sql, inArray } from "drizzle-orm";
 import { db, vendorEventsTable, listingsTable, listingPhotosTable, vendorsTable } from "@workspace/db";
+import { vendorAuthMiddleware, requireApprovedVendor } from "../lib/auth";
 
 const router: IRouter = Router();
 
@@ -37,8 +38,8 @@ router.get("/events/upcoming", async (req, res): Promise<void> => {
   })));
 });
 
-router.get("/vendor/events", async (req, res): Promise<void> => {
-  const vendorId = (req as any).vendorId;
+router.get("/vendor/events", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
+  const vendorId = (req as any).user?.id || (req as any).vendorId;
   if (!vendorId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const events = await db.select().from(vendorEventsTable)
@@ -53,8 +54,8 @@ router.get("/vendor/events", async (req, res): Promise<void> => {
   })));
 });
 
-router.post("/vendor/events", async (req, res): Promise<void> => {
-  const vendorId = (req as any).vendorId;
+router.post("/vendor/events", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
+  const vendorId = (req as any).user?.id || (req as any).vendorId;
   if (!vendorId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const { listingId, title, description, eventDate, endDate, imageUrl, category } = req.body;
@@ -89,8 +90,8 @@ router.post("/vendor/events", async (req, res): Promise<void> => {
   });
 });
 
-router.put("/vendor/events/:id", async (req, res): Promise<void> => {
-  const vendorId = (req as any).vendorId;
+router.put("/vendor/events/:id", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
+  const vendorId = (req as any).user?.id || (req as any).vendorId;
   if (!vendorId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const [existing] = await db.select().from(vendorEventsTable)
@@ -117,8 +118,8 @@ router.put("/vendor/events/:id", async (req, res): Promise<void> => {
   });
 });
 
-router.delete("/vendor/events/:id", async (req, res): Promise<void> => {
-  const vendorId = (req as any).vendorId;
+router.delete("/vendor/events/:id", vendorAuthMiddleware, requireApprovedVendor, async (req, res): Promise<void> => {
+  const vendorId = (req as any).user?.id || (req as any).vendorId;
   if (!vendorId) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   const [existing] = await db.select().from(vendorEventsTable)

@@ -44,22 +44,7 @@ export default function VendorDashboard() {
 
   if (!isVendorAuthenticated || !vendor) return null;
 
-  if (vendor.status === 'pending') {
-    return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full text-center p-8 border-border/50 shadow-lg">
-          <div className="w-16 h-16 bg-secondary/20 text-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-            <Clock className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl font-serif font-bold mb-4">Application Pending</h2>
-          <p className="text-muted-foreground mb-8">
-            Your application for {vendor.businessName} is currently under review by the ChowHub team. We'll notify you once approved.
-          </p>
-          <Button variant="outline" onClick={() => { logout(); setLocation("/vendor/login"); }} className="rounded-full px-8">Logout</Button>
-        </Card>
-      </div>
-    );
-  }
+  const isPending = vendor.status === 'pending';
 
   const handleUpdateReservation = (id: string, status: "confirmed" | "declined") => {
     updateReservation.mutate({ reservationId: id, data: { status } }, {
@@ -87,11 +72,37 @@ export default function VendorDashboard() {
 
   return (
     <VendorLayout>
-      {!listing && (
+      {isPending && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-amber-900 mb-1">Application Under Review</h3>
+              <p className="text-amber-800/80 text-sm">Your application for <strong>{vendor.businessName}</strong> is being reviewed. While you wait, you can set up your profile, menu, and photos so everything is ready when you're approved.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!listing && !isPending && (
         <div className="bg-secondary/10 border border-secondary/30 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h3 className="text-lg font-bold text-secondary-foreground mb-1">Complete your listing profile</h3>
             <p className="text-secondary-foreground/80">Add details, photos, and menus to make your restaurant visible to customers.</p>
+          </div>
+          <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold shrink-0">
+            <Link href="/vendor/onboarding">Start Setup</Link>
+          </Button>
+        </div>
+      )}
+
+      {!listing && isPending && (
+        <div className="bg-secondary/10 border border-secondary/30 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-secondary-foreground mb-1">Get a head start on your profile</h3>
+            <p className="text-secondary-foreground/80">Set up your listing details, photos, and menu while your application is being reviewed.</p>
           </div>
           <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold shrink-0">
             <Link href="/vendor/onboarding">Start Setup</Link>
@@ -154,7 +165,15 @@ export default function VendorDashboard() {
         </Card>
       </div>
 
-      <Tabs defaultValue="reservations" className="space-y-6">
+      {isPending && (
+        <div className="bg-muted/50 border border-border rounded-2xl p-8 text-center mb-8">
+          <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-lg mb-1">Reservations & Orders</h3>
+          <p className="text-muted-foreground text-sm">Order and reservation management will be available once your account is approved.</p>
+        </div>
+      )}
+
+      {!isPending && <Tabs defaultValue="reservations" className="space-y-6">
         <TabsList className="bg-card border border-border/50 h-auto p-1 rounded-xl">
           <TabsTrigger value="reservations" className="rounded-lg px-6 py-2.5 text-sm font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Reservations
@@ -252,7 +271,7 @@ export default function VendorDashboard() {
             </div>
           )}
         </TabsContent>
-      </Tabs>
+      </Tabs>}
     </VendorLayout>
   );
 }

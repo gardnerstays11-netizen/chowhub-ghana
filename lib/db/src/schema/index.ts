@@ -15,3 +15,4 @@ export * from "./site-settings";
 export * from "./listing-views";
 export * from "./subscription-packages";
 export * from "./categories";
+export * from "./editors-picks";
