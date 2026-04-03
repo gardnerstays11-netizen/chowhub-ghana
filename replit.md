@@ -16,7 +16,9 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Auth**: JWT (bcrypt + jsonwebtoken), stored in localStorage
+- **Payments**: Paystack (GHS currency, Mobile Money + Cards)
 - **Build**: esbuild (API server), Vite (frontend)
+- **GitHub**: gardnerstays11-netizen/chowhub-ghana (via Replit GitHub integration)
 
 ## Architecture
 
@@ -111,6 +113,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/vendor/reviews` — Customer Reviews (read-only with sub-ratings)
 - `/vendor/analytics` — Analytics (daily view/order bar charts + stat cards)
 - `/vendor/settings` — Vendor Settings (toggle acceptsReservations and acceptsOrders for listing)
+- `/payment/verify` — Payment verification callback (Paystack redirect after payment)
 - `/admin/login` — Admin login
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation) — uses shared AdminLayout
 - `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage) — uses shared AdminLayout

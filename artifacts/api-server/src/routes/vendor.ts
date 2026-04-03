@@ -269,6 +269,8 @@ router.get("/vendor/orders", vendorAuthMiddleware, requireApprovedVendor, async 
     id: o.order.id, listingId: o.order.listingId, userId: o.order.userId,
     items: o.order.items, orderType: o.order.orderType,
     deliveryAddress: o.order.deliveryAddress, note: o.order.note,
+    totalAmount: o.order.totalAmount, paymentStatus: o.order.paymentStatus,
+    paymentReference: o.order.paymentReference, paymentChannel: o.order.paymentChannel,
     status: o.order.status, listingName: listing.name,
     userName: o.userName ?? null, userPhone: o.userPhone ?? null,
     createdAt: o.order.createdAt.toISOString(),
@@ -284,6 +286,8 @@ router.patch("/vendor/orders/:orderId/status", vendorAuthMiddleware, requireAppr
     id: order.id, listingId: order.listingId, userId: order.userId,
     items: order.items, orderType: order.orderType,
     deliveryAddress: order.deliveryAddress, note: order.note,
+    totalAmount: order.totalAmount, paymentStatus: order.paymentStatus,
+    paymentReference: order.paymentReference, paymentChannel: order.paymentChannel,
     status: order.status, listingName: null, userName: null, userPhone: null,
     createdAt: order.createdAt.toISOString(),
   });
