@@ -99,7 +99,12 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/login`, `/register` — User auth
 - `/dashboard` — User dashboard (reservations, orders, saved, reviews)
 - `/vendor/login`, `/vendor/register` — Vendor auth
-- `/vendor/dashboard` — Vendor dashboard (manage listing, menu, orders, reservations)
+- `/vendor/dashboard` — Vendor dashboard (stat cards, reservations/orders management with VendorLayout)
+- `/vendor/menu` — Menu Management (CRUD with category, price, available/popular toggles)
+- `/vendor/events` — Event Management (CRUD with datetime pickers and category icons)
+- `/vendor/photos` — Photo Gallery (grid view with hover delete)
+- `/vendor/reviews` — Customer Reviews (read-only with sub-ratings)
+- `/vendor/analytics` — Analytics (daily view/order bar charts + stat cards)
 - `/admin/login` — Admin login
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation)
 - `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage)

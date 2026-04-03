@@ -17,6 +17,11 @@ import Dashboard from "@/pages/dashboard";
 import VendorLogin from "@/pages/vendor/login";
 import VendorRegister from "@/pages/vendor/register";
 import VendorDashboard from "@/pages/vendor/dashboard";
+import VendorMenu from "@/pages/vendor/menu";
+import VendorEvents from "@/pages/vendor/events";
+import VendorPhotos from "@/pages/vendor/photos";
+import VendorReviews from "@/pages/vendor/reviews";
+import VendorAnalytics from "@/pages/vendor/analytics";
 
 // Admin
 import AdminLogin from "@/pages/admin/login";
@@ -51,6 +56,11 @@ function Router() {
       <Route path="/vendor/login" component={VendorLogin} />
       <Route path="/vendor/register" component={VendorRegister} />
       <Route path="/vendor/dashboard" component={VendorDashboard} />
+      <Route path="/vendor/menu" component={VendorMenu} />
+      <Route path="/vendor/events" component={VendorEvents} />
+      <Route path="/vendor/photos" component={VendorPhotos} />
+      <Route path="/vendor/reviews" component={VendorReviews} />
+      <Route path="/vendor/analytics" component={VendorAnalytics} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
