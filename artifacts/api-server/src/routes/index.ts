@@ -13,6 +13,7 @@ import searchLogsRouter from "./search-logs";
 import partnersRouter from "./partners";
 import storageRouter from "./storage";
 import eventsRouter from "./events";
+import siteSettingsRouter from "./site-settings";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(searchLogsRouter);
 router.use(partnersRouter);
 router.use(storageRouter);
 router.use(eventsRouter);
+router.use(siteSettingsRouter);
 
 export default router;

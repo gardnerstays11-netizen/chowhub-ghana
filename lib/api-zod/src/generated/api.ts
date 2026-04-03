@@ -1666,6 +1666,47 @@ export const LogSearchBody = zod.object({
 });
 
 /**
+ * @summary Get all site settings (public)
+ */
+export const GetSiteSettingsResponse = zod
+  .record(zod.string(), zod.string())
+  .describe("Key-value map of all site settings");
+
+/**
+ * @summary Update site settings (admin)
+ */
+export const UpdateSiteSettingsBody = zod.object({
+  site_name: zod.string().optional(),
+  site_tagline: zod.string().optional(),
+  site_description: zod.string().optional(),
+  site_logo_url: zod.string().optional(),
+  site_favicon_url: zod.string().optional(),
+  meta_title: zod.string().optional(),
+  meta_description: zod.string().optional(),
+  meta_keywords: zod.string().optional(),
+  og_image_url: zod.string().optional(),
+  google_analytics_id: zod.string().optional(),
+  facebook_pixel_id: zod.string().optional(),
+  google_tag_manager_id: zod.string().optional(),
+  hotjar_id: zod.string().optional(),
+  social_twitter: zod.string().optional(),
+  social_instagram: zod.string().optional(),
+  social_facebook: zod.string().optional(),
+  social_tiktok: zod.string().optional(),
+  social_youtube: zod.string().optional(),
+  contact_email: zod.string().optional(),
+  contact_phone: zod.string().optional(),
+  footer_text: zod.string().optional(),
+  custom_head_scripts: zod.string().optional(),
+  primary_color: zod.string().optional(),
+  secondary_color: zod.string().optional(),
+});
+
+export const UpdateSiteSettingsResponse = zod
+  .record(zod.string(), zod.string())
+  .describe("Key-value map of all site settings");
+
+/**
  * @summary Get active partners for public display
  */
 export const GetPartnersResponseItem = zod.object({

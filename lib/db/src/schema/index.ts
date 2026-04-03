@@ -11,3 +11,4 @@ export * from "./subscriptions";
 export * from "./search-logs";
 export * from "./partners";
 export * from "./vendor-events";
+export * from "./site-settings";

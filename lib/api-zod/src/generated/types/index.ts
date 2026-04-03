@@ -72,6 +72,8 @@ export * from "./searchListingsAcceptsReservations";
 export * from "./searchListingsOpenNow";
 export * from "./searchListingsParams";
 export * from "./searchListingsSort";
+export * from "./siteSettings";
+export * from "./siteSettingsUpdate";
 export * from "./successResponse";
 export * from "./updateListingBody";
 export * from "./updateListingBodyOpeningHours";

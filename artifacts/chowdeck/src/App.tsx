@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
+import { SiteHead } from "@/components/SiteHead";
 
 // Public
 import Home from "@/pages/home";
@@ -21,6 +22,7 @@ import VendorDashboard from "@/pages/vendor/dashboard";
 import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminPartners from "@/pages/admin/partners";
+import AdminSettings from "@/pages/admin/settings";
 
 import NotFound from "@/pages/not-found";
 
@@ -53,6 +55,7 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/partners" component={AdminPartners} />
+      <Route path="/admin/settings" component={AdminSettings} />
 
       <Route component={NotFound} />
     </Switch>
@@ -65,6 +68,7 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") || ""}>
+            <SiteHead />
             <Router />
           </WouterRouter>
           <Toaster />

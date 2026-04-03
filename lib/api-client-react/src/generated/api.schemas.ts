@@ -691,6 +691,40 @@ export interface UpdateVendorEventBody {
   active?: boolean;
 }
 
+/**
+ * Key-value map of all site settings
+ */
+export interface SiteSettings {
+  [key: string]: string;
+}
+
+export interface SiteSettingsUpdate {
+  site_name?: string;
+  site_tagline?: string;
+  site_description?: string;
+  site_logo_url?: string;
+  site_favicon_url?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_image_url?: string;
+  google_analytics_id?: string;
+  facebook_pixel_id?: string;
+  google_tag_manager_id?: string;
+  hotjar_id?: string;
+  social_twitter?: string;
+  social_instagram?: string;
+  social_facebook?: string;
+  social_tiktok?: string;
+  social_youtube?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  footer_text?: string;
+  custom_head_scripts?: string;
+  primary_color?: string;
+  secondary_color?: string;
+}
+
 export type SearchListingsParams = {
   q?: string;
   category?: string;

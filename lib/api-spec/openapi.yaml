@@ -34,6 +34,8 @@ tags:
     description: Partner logos and branding
   - name: Storage
     description: Object storage upload and serving endpoints
+  - name: site-settings
+    description: Site configuration, branding, SEO, and analytics
 
 paths:
   /healthz:
@@ -1446,6 +1448,40 @@ paths:
                   logged:
                     type: boolean
 
+  /site-settings:
+    get:
+      operationId: getSiteSettings
+      tags: [site-settings]
+      summary: Get all site settings (public)
+      responses:
+        "200":
+          description: Site settings key-value map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+
+  /admin/site-settings:
+    put:
+      operationId: updateSiteSettings
+      tags: [site-settings]
+      summary: Update site settings (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteSettingsUpdate"
+      responses:
+        "200":
+          description: Updated site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+
   /partners:
     get:
       operationId: getPartners
@@ -2685,3 +2721,61 @@ components:
           type: string
         active:
           type: boolean
+
+    SiteSettings:
+      type: object
+      additionalProperties:
+        type: string
+      description: Key-value map of all site settings
+
+    SiteSettingsUpdate:
+      type: object
+      properties:
+        site_name:
+          type: string
+        site_tagline:
+          type: string
+        site_description:
+          type: string
+        site_logo_url:
+          type: string
+        site_favicon_url:
+          type: string
+        meta_title:
+          type: string
+        meta_description:
+          type: string
+        meta_keywords:
+          type: string
+        og_image_url:
+          type: string
+        google_analytics_id:
+          type: string
+        facebook_pixel_id:
+          type: string
+        google_tag_manager_id:
+          type: string
+        hotjar_id:
+          type: string
+        social_twitter:
+          type: string
+        social_instagram:
+          type: string
+        social_facebook:
+          type: string
+        social_tiktok:
+          type: string
+        social_youtube:
+          type: string
+        contact_email:
+          type: string
+        contact_phone:
+          type: string
+        footer_text:
+          type: string
+        custom_head_scripts:
+          type: string
+        primary_color:
+          type: string
+        secondary_color:
+          type: string
