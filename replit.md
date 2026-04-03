@@ -55,9 +55,10 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`
 
 ### Design System
-- **Colors**: Deep green (primary), Amber/Gold (secondary), Cream/off-white (background)
-- **Fonts**: Playfair Display (serif headings), Plus Jakarta Sans (body)
-- **Theme**: Warm Ghanaian food market vibe, mobile-first
+- **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
+- **Fonts**: Fraunces (display/headings — variable optical-size serif), DM Sans (body)
+- **Border radius**: `0.5rem` base — tight, editorial feel; no rounded-3xl/rounded-full on containers
+- **Theme**: Clean editorial, warm Ghanaian palette, minimal badge usage
 
 ## Key Commands
 

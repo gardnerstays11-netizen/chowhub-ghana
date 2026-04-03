@@ -1,11 +1,20 @@
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Star, ArrowRight } from "lucide-react";
+import { Search, MapPin, ArrowRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { useGetFeaturedListings, useGetRecentListings } from "@workspace/api-client-react";
 import { ListingCard } from "@/components/listing-card";
+
+const CATEGORIES = [
+  { name: "Local Chop Bars", slug: "chop_bar" },
+  { name: "Fine Dining", slug: "fine_dining" },
+  { name: "Cafes & Bakeries", slug: "cafe_bakery" },
+  { name: "Bars & Grills", slug: "bar_grill" },
+  { name: "Street Food", slug: "street_food" },
+  { name: "Seafood", slug: "seafood" },
+];
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -22,32 +31,32 @@ export default function Home() {
 
   return (
     <MainLayout>
-      <section className="relative bg-primary/5 py-24 md:py-32">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-serif font-bold text-foreground mb-6">
-              Taste the heart of <span className="text-primary">Ghana</span>
+      <section className="bg-primary text-primary-foreground py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl leading-[1.1] mb-4">
+              Find great food across Ghana
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-10">
-              From bustling chop bars to elegant rooftop dining. Find your next favorite meal.
+            <p className="text-primary-foreground/70 text-lg mb-10 max-w-lg">
+              From chop bars to rooftop dining — search restaurants, read reviews, and book tables.
             </p>
 
-            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto bg-card p-4 rounded-3xl shadow-lg border border-border/50">
-              <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-full">
-                <Search className="w-5 h-5 text-muted-foreground" />
+            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 max-w-xl">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Restaurant, cuisine, or dish..." 
-                  className="border-0 bg-transparent shadow-none focus-visible:ring-0 px-0"
+                  className="pl-9 h-11 bg-white text-foreground border-0 rounded-md"
                 />
               </div>
-              <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-full">
-                <MapPin className="w-5 h-5 text-muted-foreground" />
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 <select 
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="bg-transparent border-0 outline-none w-full flex-1 text-sm font-medium"
+                  className="h-11 pl-9 pr-8 bg-white text-foreground border-0 rounded-md text-sm font-medium appearance-none cursor-pointer"
                 >
                   <option value="Accra">Accra</option>
                   <option value="Kumasi">Kumasi</option>
@@ -55,7 +64,7 @@ export default function Home() {
                   <option value="Tamale">Tamale</option>
                 </select>
               </div>
-              <Button type="submit" size="lg" className="rounded-full px-8 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold">
+              <Button type="submit" size="default" className="h-11 px-6 bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold rounded-md">
                 Search
               </Button>
             </form>
@@ -63,25 +72,19 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-14">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-serif font-bold">Explore by Category</h2>
-            <Link href="/search" className="text-primary font-medium hover:underline flex items-center gap-1">View All <ArrowRight className="w-4 h-4" /></Link>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl">Browse by category</h2>
+            <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              View all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {[
-              { name: "Local Chop Bars", slug: "chop_bar", emoji: "🍲" },
-              { name: "Fine Dining", slug: "fine_dining", emoji: "🍽️" },
-              { name: "Cafes", slug: "cafe", emoji: "☕" },
-              { name: "Bars & Grills", slug: "bar_grill", emoji: "🍻" },
-              { name: "Street Food", slug: "street_food", emoji: "🌯" },
-              { name: "Seafood", slug: "seafood", emoji: "🦐" }
-            ].map((cat) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {CATEGORIES.map((cat) => (
               <Link key={cat.slug} href={`/search?category=${cat.slug}`} className="group block">
-                <div className="aspect-square bg-muted rounded-2xl flex flex-col items-center justify-center p-4 text-center group-hover:bg-primary/10 transition-colors border border-border/50">
-                  <span className="text-3xl mb-2">{cat.emoji}</span>
-                  <span className="font-bold text-foreground group-hover:text-primary transition-colors text-sm">{cat.name}</span>
+                <div className="border border-border rounded-lg px-4 py-5 text-center hover:border-primary/30 hover:bg-primary/[0.03] transition-colors">
+                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{cat.name}</span>
                 </div>
               </Link>
             ))}
@@ -89,23 +92,25 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16 bg-muted/30">
+      <section className="py-14 border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-serif font-bold">Featured Places</h2>
-              <p className="text-muted-foreground mt-1">Top picks from the ChowHub community</p>
+              <h2 className="text-2xl">Featured places</h2>
+              <p className="text-muted-foreground text-sm mt-1">Top picks from the ChowHub community</p>
             </div>
-            <Link href="/search?sort=featured" className="text-primary font-medium hover:underline flex items-center gap-1">See All <ArrowRight className="w-4 h-4" /></Link>
+            <Link href="/search?sort=featured" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              See all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
           {featuredLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {[1,2,3].map(i => (
-                <div key={i} className="bg-muted animate-pulse rounded-xl h-80"></div>
+                <div key={i} className="bg-muted animate-pulse rounded-lg h-72"></div>
               ))}
             </div>
           ) : featured && featured.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {featured.slice(0, 6).map(listing => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
@@ -114,23 +119,25 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16">
+      <section className="py-14 border-t border-border">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-serif font-bold">Recently Added</h2>
-              <p className="text-muted-foreground mt-1">Fresh spots to try out</p>
+              <h2 className="text-2xl">Recently added</h2>
+              <p className="text-muted-foreground text-sm mt-1">New spots to try out</p>
             </div>
-            <Link href="/search?sort=newest" className="text-primary font-medium hover:underline flex items-center gap-1">See All <ArrowRight className="w-4 h-4" /></Link>
+            <Link href="/search?sort=newest" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              See all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
           {recentLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {[1,2,3].map(i => (
-                <div key={i} className="bg-muted animate-pulse rounded-xl h-80"></div>
+                <div key={i} className="bg-muted animate-pulse rounded-lg h-72"></div>
               ))}
             </div>
           ) : recent && recent.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {recent.slice(0, 6).map(listing => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
@@ -140,12 +147,12 @@ export default function Home() {
       </section>
 
       <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center max-w-2xl">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Own a Restaurant?</h2>
-          <p className="text-primary-foreground/80 mb-8 text-lg">
-            List your restaurant on ChowHub and reach thousands of food lovers across Ghana.
+        <div className="container mx-auto px-4 text-center max-w-xl">
+          <h2 className="text-3xl mb-3">Own a restaurant?</h2>
+          <p className="text-primary-foreground/70 mb-8">
+            List your restaurant on ChowHub and reach food lovers across Ghana.
           </p>
-          <Button asChild size="lg" className="rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold px-8">
+          <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold px-6">
             <Link href="/vendor/register">Get Started Free</Link>
           </Button>
         </div>

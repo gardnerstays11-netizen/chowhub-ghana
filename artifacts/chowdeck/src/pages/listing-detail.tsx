@@ -2,12 +2,10 @@ import { MainLayout } from "@/components/layout";
 import { useGetListingBySlug, useGetListingMenu, useGetListingReviews, useCreateReservation, useCreateOrder, useSaveListing, useUnsaveListing } from "@workspace/api-client-react";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Star, Clock, Phone, MessageCircle, Heart, Globe, Instagram, Facebook, Share2 } from "lucide-react";
+import { MapPin, Star, Clock, Phone, MessageCircle, Heart, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function ListingDetail() {
   const { slug } = useParams();
@@ -28,129 +26,152 @@ export default function ListingDetail() {
   });
 
   const saveMutation = useSaveListing();
-  const unsaveMutation = useUnsaveListing();
 
   if (isLoading) {
     return (
       <MainLayout>
         <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse flex flex-col gap-8">
-            <div className="h-64 md:h-96 bg-muted rounded-3xl w-full"></div>
-            <div className="h-12 bg-muted rounded-xl w-1/3"></div>
-            <div className="h-8 bg-muted rounded-xl w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="md:col-span-2 h-64 bg-muted rounded-3xl"></div>
-              <div className="h-64 bg-muted rounded-3xl"></div>
-            </div>
+          <div className="animate-pulse flex flex-col gap-6">
+            <div className="h-64 md:h-80 bg-muted rounded-lg w-full"></div>
+            <div className="h-10 bg-muted rounded w-1/3"></div>
+            <div className="h-6 bg-muted rounded w-1/4"></div>
           </div>
         </div>
       </MainLayout>
     );
   }
 
-  if (!listing) return <MainLayout><div className="text-center py-20">Listing not found</div></MainLayout>;
+  if (!listing) return <MainLayout><div className="text-center py-20 text-muted-foreground">Listing not found</div></MainLayout>;
 
   return (
     <MainLayout>
-      {/* Hero Gallery */}
-      <div className="relative h-64 md:h-96 w-full bg-muted overflow-hidden">
+      <div className="relative h-56 md:h-80 w-full bg-muted overflow-hidden">
         {listing.photos && listing.photos.length > 0 ? (
           <img src={listing.photos[0].url} alt={listing.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary/30 font-serif text-4xl font-bold">
+          <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary/20 text-3xl font-medium">
             {listing.name}
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 container mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-4">
-            <div className="text-white">
-              <div className="flex gap-2 mb-3">
-                <Badge variant="secondary" className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border-0">{listing.category.replace('_', ' ')}</Badge>
-                {listing.isFeatured && <Badge className="bg-secondary text-secondary-foreground border-0">Featured</Badge>}
-              </div>
-              <h1 className="text-4xl md:text-6xl font-serif font-bold mb-2">{listing.name}</h1>
-              <div className="flex items-center gap-4 text-white/90">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{listing.area}, {listing.city}</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 p-6 md:px-0 md:py-8">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+              <div className="text-white">
+                <div className="flex items-center gap-3 mb-2 text-sm text-white/70">
+                  <span className="capitalize">{listing.category.replace('_', ' ')}</span>
+                  {listing.isFeatured && (
+                    <>
+                      <span>&middot;</span>
+                      <span className="text-secondary font-medium">Featured</span>
+                    </>
+                  )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-secondary text-secondary" />
-                  <span className="font-bold text-white">{listing.averageRating.toFixed(1)}</span>
-                  <span className="text-white/70">({listing.totalReviews} reviews)</span>
+                <h1 className="text-3xl md:text-5xl mb-2" style={{ fontFamily: 'var(--app-font-display)' }}>{listing.name}</h1>
+                <div className="flex items-center gap-4 text-sm text-white/80">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {listing.area}, {listing.city}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
+                    <span className="font-semibold text-white">{listing.averageRating.toFixed(1)}</span>
+                    <span>({listing.totalReviews})</span>
+                  </span>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex gap-3 w-full md:w-auto">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="rounded-full bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md shrink-0"
-              >
-                <Share2 className="w-5 h-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="rounded-full bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md shrink-0"
-                onClick={() => {
-                  if (!isAuthenticated) { setLocation('/login'); return; }
-                  if (listing) saveMutation.mutate({ listingId: listing.id });
-                }}
-              >
-                <Heart className="w-5 h-5" />
-              </Button>
-              <Button asChild className="rounded-full flex-1 md:flex-none bg-secondary text-secondary-foreground hover:bg-secondary/90 font-bold gap-2">
-                <a href={`tel:${listing.phone}`}>
-                  <Phone className="w-5 h-5" />
-                  Call Now
-                </a>
-              </Button>
-              {listing.whatsapp && (
-                <Button asChild className="rounded-full flex-1 md:flex-none bg-[#25D366] text-white hover:bg-[#20bd5a] font-bold gap-2">
-                  <a href={`https://wa.me/${listing.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="w-5 h-5" />
-                    WhatsApp
+              
+              <div className="flex gap-2 w-full md:w-auto">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 shrink-0"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 shrink-0"
+                  onClick={() => {
+                    if (!isAuthenticated) { setLocation('/login'); return; }
+                    if (listing) saveMutation.mutate({ listingId: listing.id });
+                  }}
+                >
+                  <Heart className="w-4 h-4" />
+                </Button>
+                <Button asChild className="flex-1 md:flex-none bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold gap-2">
+                  <a href={`tel:${listing.phone}`}>
+                    <Phone className="w-4 h-4" />
+                    Call Now
                   </a>
                 </Button>
-              )}
+                {listing.whatsapp && (
+                  <Button asChild className="flex-1 md:flex-none bg-[#25D366] text-white hover:bg-[#20bd5a] font-semibold gap-2">
+                    <a href={`https://wa.me/${listing.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-8">
+      <div className="container mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-10">
             <section>
-              <h2 className="text-2xl font-serif font-bold mb-4">About</h2>
-              <p className="text-muted-foreground leading-relaxed text-lg">{listing.description}</p>
+              <h2 className="text-xl font-semibold mb-3">About</h2>
+              <p className="text-muted-foreground leading-relaxed">{listing.description}</p>
             </section>
 
-            <section>
-              <h2 className="text-2xl font-serif font-bold mb-4">Features & Dining Style</h2>
-              <div className="flex flex-wrap gap-2">
-                {listing.features.map(f => (
-                  <Badge key={f} variant="outline" className="bg-muted/30 border-border/50 py-1.5 px-3 text-sm">
-                    {f}
-                  </Badge>
-                ))}
-              </div>
-            </section>
+            {listing.features.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold mb-3">Features</h2>
+                <div className="flex flex-wrap gap-2">
+                  {listing.features.map(f => (
+                    <span key={f} className="text-sm bg-muted px-3 py-1.5 rounded-md text-muted-foreground">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {menu && menu.length > 0 && (
               <section>
-                <h2 className="text-2xl font-serif font-bold mb-4">Menu</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <h2 className="text-xl font-semibold mb-4">Menu</h2>
+                <div className="border border-border rounded-lg divide-y divide-border">
                   {menu.map(item => (
-                    <div key={item.id} className="p-4 border border-border/50 rounded-2xl bg-card">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-lg">{item.name}</h4>
-                        {item.price && <span className="font-bold text-primary">GHS {item.price}</span>}
+                    <div key={item.id} className="px-4 py-3 flex justify-between items-start gap-4">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{item.description}</p>
+                      {item.price && <span className="text-sm font-semibold text-primary shrink-0">GHS {item.price}</span>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {reviews && reviews.length > 0 && (
+              <section>
+                <h2 className="text-xl font-semibold mb-4">Reviews</h2>
+                <div className="space-y-4">
+                  {reviews.map((review: any) => (
+                    <div key={review.id} className="border border-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-sm">{review.userName || 'Guest'}</span>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-secondary text-secondary" />
+                          <span className="text-sm font-semibold">{review.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{review.comment}</p>
                     </div>
                   ))}
                 </div>
@@ -159,26 +180,26 @@ export default function ListingDetail() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-serif font-bold text-xl mb-4">Location & Hours</h3>
+            <div className="border border-border rounded-lg p-5">
+              <h3 className="font-semibold mb-4">Location & Hours</h3>
               
-              <div className="space-y-4">
-                <div className="flex gap-3 text-muted-foreground">
-                  <MapPin className="w-5 h-5 shrink-0 text-primary" />
+              <div className="space-y-4 text-sm">
+                <div className="flex gap-3">
+                  <MapPin className="w-4 h-4 shrink-0 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="font-medium text-foreground">{listing.address}</p>
-                    {listing.landmark && <p className="text-sm">Landmark: {listing.landmark}</p>}
-                    <p className="text-sm">{listing.area}, {listing.city}</p>
+                    <p className="font-medium">{listing.address}</p>
+                    {listing.landmark && <p className="text-muted-foreground mt-0.5">Near {listing.landmark}</p>}
+                    <p className="text-muted-foreground">{listing.area}, {listing.city}</p>
                   </div>
                 </div>
                 
-                <div className="flex gap-3 text-muted-foreground">
-                  <Clock className="w-5 h-5 shrink-0 text-primary" />
+                <div className="flex gap-3">
+                  <Clock className="w-4 h-4 shrink-0 text-muted-foreground mt-0.5" />
                   <div className="w-full">
                     {Object.entries(listing.openingHours || {}).map(([day, hours]: [string, any]) => (
-                      <div key={day} className="flex justify-between text-sm mb-1">
-                        <span className="capitalize">{day}</span>
-                        <span className="font-medium text-foreground">
+                      <div key={day} className="flex justify-between py-0.5">
+                        <span className="capitalize text-muted-foreground">{day}</span>
+                        <span className="font-medium">
                           {typeof hours === 'string' ? (hours === 'closed' ? 'Closed' : hours) : (hours?.open ? `${hours.open} - ${hours.close}` : 'Closed')}
                         </span>
                       </div>
@@ -189,17 +210,17 @@ export default function ListingDetail() {
             </div>
 
             {(listing.acceptsReservations || listing.acceptsOrders) && (
-              <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6">
-                <h3 className="font-serif font-bold text-xl mb-4 text-primary">Services</h3>
-                <div className="space-y-3">
+              <div className="border border-border rounded-lg p-5">
+                <h3 className="font-semibold mb-4">Services</h3>
+                <div className="space-y-2">
                   {listing.acceptsReservations && (
-                    <Button className="w-full rounded-full font-bold" onClick={() => !isAuthenticated && setLocation('/login')}>
+                    <Button className="w-full font-semibold" onClick={() => !isAuthenticated && setLocation('/login')}>
                       Book a Table
                     </Button>
                   )}
                   {listing.acceptsOrders && (
-                    <Button variant="outline" className="w-full rounded-full font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground" onClick={() => !isAuthenticated && setLocation('/login')}>
-                      Order Delivery/Pickup
+                    <Button variant="outline" className="w-full font-semibold" onClick={() => !isAuthenticated && setLocation('/login')}>
+                      Order Delivery / Pickup
                     </Button>
                   )}
                 </div>

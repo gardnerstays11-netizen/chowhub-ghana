@@ -41,52 +41,50 @@ export default function Login() {
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-20 max-w-md">
-        <div className="bg-card border border-border/50 rounded-3xl p-8 shadow-sm">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-serif font-bold mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Log in to manage your reservations and saved places.</p>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" className="rounded-xl h-12" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" className="rounded-xl h-12" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full h-12 rounded-xl font-bold text-lg" disabled={loginMutation.isPending}>
-                {loginMutation.isPending ? "Logging in..." : "Log in"}
-              </Button>
-            </form>
-          </Form>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account? <Link href="/register" className="text-primary font-bold hover:underline">Sign up</Link>
-          </div>
+      <div className="container mx-auto px-4 py-20 max-w-sm">
+        <div className="mb-8">
+          <h1 className="text-2xl mb-1" style={{ fontFamily: 'var(--app-font-display)' }}>Welcome back</h1>
+          <p className="text-sm text-muted-foreground">Log in to manage reservations and saved places.</p>
         </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="you@example.com" className="h-10" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Enter password" className="h-10" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full h-10 font-semibold" disabled={loginMutation.isPending}>
+              {loginMutation.isPending ? "Logging in..." : "Log in"}
+            </Button>
+          </form>
+        </Form>
+
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Don't have an account? <Link href="/register" className="text-primary font-medium hover:underline">Sign up</Link>
+        </p>
       </div>
     </MainLayout>
   );
