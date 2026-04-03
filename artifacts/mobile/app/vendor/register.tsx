@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, ScrollView, Platform } from "react-native";
+import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator, Platform } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useRegisterVendor } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 export default function VendorRegisterScreen() {
   const colors = useColors();
@@ -29,7 +30,11 @@ export default function VendorRegisterScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 40 : 40, paddingBottom: 60 }}>
+    <KeyboardAwareScrollViewCompat
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={{ paddingTop: isWeb ? 67 + 40 : 40, paddingBottom: 60 }}
+      bounces={false}
+    >
       <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Register Restaurant</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>List your restaurant on ChowHub</Text>
       <View style={styles.form}>
@@ -46,7 +51,7 @@ export default function VendorRegisterScreen() {
           {mutation.isPending ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.btnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>Register</Text>}
         </Pressable>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

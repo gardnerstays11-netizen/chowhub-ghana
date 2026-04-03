@@ -6,13 +6,14 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -26,6 +27,23 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const colors = useColors();
+  const router = useRouter();
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("onboarding_complete").then((val) => {
+      setInitialRoute(val === "true" ? "(tabs)" : "onboarding");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (initialRoute === "onboarding") {
+      router.replace("/onboarding");
+    }
+  }, [initialRoute]);
+
+  if (!initialRoute) return null;
+
   return (
     <Stack
       screenOptions={{
@@ -36,6 +54,7 @@ function RootLayoutNav() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
+      <Stack.Screen name="onboarding" options={{ headerShown: false, animation: "none" }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[slug]" options={{ title: "" }} />
       <Stack.Screen name="auth/login" options={{ title: "Log in", presentation: "modal" }} />

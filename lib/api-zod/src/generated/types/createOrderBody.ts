@@ -16,4 +16,6 @@ export interface CreateOrderBody {
   deliveryAddress?: string | null;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  totalAmount?: number | null;
 }

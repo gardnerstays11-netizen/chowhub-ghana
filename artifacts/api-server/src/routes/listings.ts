@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, and, ilike, or, sql, desc, asc, inArray, gte } from "drizzle-orm";
-import { db, listingsTable, listingPhotosTable, ordersTable, reviewsTable, listingViewsTable } from "@workspace/db";
+import { db, listingsTable, listingPhotosTable, ordersTable, reviewsTable, listingViewsTable, menuItemsTable } from "@workspace/db";
 import crypto from "crypto";
 
 const router: IRouter = Router();
@@ -57,12 +57,14 @@ router.get("/listings", async (req, res): Promise<void> => {
 
   if (q) {
     const search = `%${q}%`;
+    const menuMatchIds = sql`(SELECT DISTINCT ${menuItemsTable.listingId} FROM ${menuItemsTable} WHERE ${ilike(menuItemsTable.name, search)} OR ${ilike(menuItemsTable.description, search)})`;
     conditions.push(
       or(
         ilike(listingsTable.name, search),
         ilike(listingsTable.area, search),
         ilike(listingsTable.city, search),
         ilike(listingsTable.description, search),
+        sql`${listingsTable.id} IN ${menuMatchIds}`,
       )
     );
   }
@@ -104,8 +106,50 @@ router.get("/listings", async (req, res): Promise<void> => {
     default: orderBy = desc(listingsTable.isFeatured);
   }
 
+  const userLat = lat ? parseFloat(lat as string) : null;
+  const userLng = lng ? parseFloat(lng as string) : null;
+  const hasLocation = userLat !== null && userLng !== null && !isNaN(userLat) && !isNaN(userLng);
+
   const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(listingsTable).where(whereClause);
   const total = Number(countResult.count);
+
+  if (hasLocation && (sort === "nearest" || !sort)) {
+    const geoConditions = [...conditions, sql`${listingsTable.lat} IS NOT NULL`, sql`${listingsTable.lng} IS NOT NULL`];
+    const geoWhere = and(...geoConditions);
+
+    const [geoCount] = await db.select({ count: sql<number>`count(*)` }).from(listingsTable).where(geoWhere);
+    const geoTotal = Number(geoCount.count);
+
+    const allListings = await db.select().from(listingsTable).where(geoWhere);
+    const withDistance = allListings
+      .map(l => {
+        const dist = Math.sqrt(
+          Math.pow((l.lat! - userLat!) * 111, 2) +
+          Math.pow((l.lng! - userLng!) * 111 * Math.cos(userLat! * Math.PI / 180), 2)
+        );
+        return { ...l, distance: dist };
+      })
+      .sort((a, b) => a.distance - b.distance);
+
+    const paged = withDistance.slice(offset, offset + limit);
+
+    const listingIds = paged.map(l => l.id);
+    let coverPhotos: any[] = [];
+    if (listingIds.length > 0) {
+      coverPhotos = await db.select().from(listingPhotosTable).where(
+        and(inArray(listingPhotosTable.listingId, listingIds), eq(listingPhotosTable.isCover, true))
+      );
+    }
+    const coverMap = new Map(coverPhotos.map(p => [p.listingId, p.url]));
+
+    const results = paged.map(l => ({
+      ...formatListingCard(l, coverMap.get(l.id)),
+      distance: Math.round(l.distance * 10) / 10,
+    }));
+
+    res.json({ listings: results, total: geoTotal, page, totalPages: Math.ceil(geoTotal / limit) });
+    return;
+  }
 
   const listings = await db.select().from(listingsTable).where(whereClause).orderBy(orderBy).limit(limit).offset(offset);
 
@@ -209,6 +253,7 @@ router.get("/listings/autocomplete", async (req, res): Promise<void> => {
   if (!q || q.length < 2) { res.json([]); return; }
 
   const search = `%${q}%`;
+  const menuMatchIds = sql`(SELECT DISTINCT ${menuItemsTable.listingId} FROM ${menuItemsTable} WHERE ${ilike(menuItemsTable.name, search)})`;
   const listings = await db.select({
     id: listingsTable.id,
     name: listingsTable.name,
@@ -224,12 +269,35 @@ router.get("/listings/autocomplete", async (req, res): Promise<void> => {
         ilike(listingsTable.area, search),
         ilike(listingsTable.city, search),
         ilike(listingsTable.description, search),
+        sql`${listingsTable.id} IN ${menuMatchIds}`,
       )
     ))
     .orderBy(desc(listingsTable.averageRating))
     .limit(limit);
 
-  res.json(listings);
+  const menuItems = await db.select({
+    name: menuItemsTable.name,
+    listingId: menuItemsTable.listingId,
+  }).from(menuItemsTable)
+    .where(ilike(menuItemsTable.name, search))
+    .limit(5);
+
+  const dishSuggestions = menuItems.map(m => ({
+    id: `dish-${m.listingId}-${m.name}`,
+    name: m.name,
+    slug: null,
+    category: "dish",
+    city: null,
+    area: null,
+    listingId: m.listingId,
+    type: "dish",
+  }));
+
+  const listingResults = listings.map(l => ({ ...l, type: "listing" as const }));
+  const seen = new Set(listingResults.map(l => l.name.toLowerCase()));
+  const uniqueDishes = dishSuggestions.filter(d => !seen.has(d.name.toLowerCase()));
+
+  res.json([...listingResults, ...uniqueDishes].slice(0, limit));
 });
 
 router.get("/listings/nearby", async (req, res): Promise<void> => {

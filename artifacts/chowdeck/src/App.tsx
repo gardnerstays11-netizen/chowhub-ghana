@@ -33,6 +33,7 @@ import AdminSubscriptions from "@/pages/admin/subscriptions";
 import AdminCategories from "@/pages/admin/categories";
 import AdminEditorsPicks from "@/pages/admin/editors-picks";
 
+import PaymentVerify from "@/pages/payment-verify";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -74,6 +75,9 @@ function Router() {
       <Route path="/admin/subscriptions" component={AdminSubscriptions} />
       <Route path="/admin/categories" component={AdminCategories} />
       <Route path="/admin/editors-picks" component={AdminEditorsPicks} />
+
+      {/* Payment */}
+      <Route path="/payment/verify" component={PaymentVerify} />
 
       <Route component={NotFound} />
     </Switch>

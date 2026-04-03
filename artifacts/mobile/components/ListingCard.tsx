@@ -16,10 +16,12 @@ interface ListingCardProps {
     coverPhoto?: string | null;
     isFeatured?: boolean;
     cuisineType?: string[];
+    distance?: number | null;
   };
+  showDistance?: boolean;
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, showDistance }: ListingCardProps) {
   const colors = useColors();
   const router = useRouter();
 
@@ -52,6 +54,14 @@ export function ListingCard({ listing }: ListingCardProps) {
           <Feather name="star" size={11} color="#fbbf24" />
           <Text style={styles.ratingOverlayText}>{listing.averageRating.toFixed(1)}</Text>
         </View>
+        {showDistance && listing.distance != null && (
+          <View style={styles.distanceBadge}>
+            <Feather name="navigation" size={10} color="#24503a" />
+            <Text style={styles.distanceText}>
+              {listing.distance < 1 ? `${Math.round(listing.distance * 1000)}m` : `${listing.distance} km`}
+            </Text>
+          </View>
+        )}
       </View>
       <View style={styles.content}>
         <Text style={[styles.name, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]} numberOfLines={1}>
@@ -124,6 +134,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   ratingOverlayText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  distanceBadge: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  distanceText: { color: "#24503a", fontSize: 11, fontWeight: "600" },
   content: { padding: 14, gap: 6 },
   name: { fontSize: 16, letterSpacing: -0.3 },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 5 },

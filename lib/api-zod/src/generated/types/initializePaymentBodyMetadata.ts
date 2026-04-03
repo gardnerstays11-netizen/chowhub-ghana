@@ -6,9 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateUserBody {
-  name?: string;
-  phone?: string;
-  city?: string;
-  avatarUrl?: string | null;
-}
+export type InitializePaymentBodyMetadata = { [key: string]: unknown };

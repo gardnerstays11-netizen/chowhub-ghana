@@ -7,6 +7,7 @@ interface UserInfo {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
 }
 
 interface VendorInfo {
@@ -28,6 +29,7 @@ interface AuthState {
   loginUser: (token: string, user: UserInfo) => Promise<void>;
   loginVendor: (token: string, vendor: VendorInfo) => Promise<void>;
   loginAdmin: (token: string, user: UserInfo) => Promise<void>;
+  updateUser: (updates: Partial<UserInfo>) => void;
   logout: () => Promise<void>;
 }
 
@@ -40,6 +42,7 @@ const AuthContext = createContext<AuthState>({
   loginUser: async () => {},
   loginVendor: async () => {},
   loginAdmin: async () => {},
+  updateUser: () => {},
   logout: async () => {},
 });
 
@@ -99,6 +102,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.removeItem("auth_vendor");
   }, []);
 
+  const updateUser = useCallback((updates: Partial<UserInfo>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      AsyncStorage.setItem("auth_user", JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const logout = useCallback(async () => {
     setToken(null);
     setUser(null);
@@ -108,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, vendor, mode, isAuthenticated: !!token, loginUser, loginVendor, loginAdmin, logout }}>
+    <AuthContext.Provider value={{ token, user, vendor, mode, isAuthenticated: !!token, loginUser, loginVendor, loginAdmin, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

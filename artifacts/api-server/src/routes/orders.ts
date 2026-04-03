@@ -7,7 +7,7 @@ const router: IRouter = Router();
 
 router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
-  const { listingId, items, orderType, deliveryAddress, note } = req.body;
+  const { listingId, items, orderType, deliveryAddress, note, totalAmount } = req.body;
 
   const [order] = await db.insert(ordersTable).values({
     listingId,
@@ -16,6 +16,7 @@ router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
     orderType,
     deliveryAddress: deliveryAddress ?? null,
     note: note ?? null,
+    totalAmount: totalAmount ?? null,
   }).returning();
 
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.id, listingId));
@@ -28,6 +29,10 @@ router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
     orderType: order.orderType,
     deliveryAddress: order.deliveryAddress,
     note: order.note,
+    totalAmount: order.totalAmount,
+    paymentStatus: order.paymentStatus,
+    paymentReference: order.paymentReference,
+    paymentChannel: order.paymentChannel,
     status: order.status,
     listingName: listing?.name ?? null,
     userName: null,
@@ -54,6 +59,10 @@ router.get("/orders/mine", authMiddleware, async (req, res): Promise<void> => {
     orderType: o.order.orderType,
     deliveryAddress: o.order.deliveryAddress,
     note: o.order.note,
+    totalAmount: o.order.totalAmount,
+    paymentStatus: o.order.paymentStatus,
+    paymentReference: o.order.paymentReference,
+    paymentChannel: o.order.paymentChannel,
     status: o.order.status,
     listingName: o.listingName ?? null,
     userName: null,

@@ -12,6 +12,7 @@ interface AuthState {
   loginUser: (token: string, user: User) => void;
   loginVendor: (token: string, vendor: Vendor) => void;
   loginAdmin: (token: string) => void;
+  updateUser: (updates: Partial<User>) => void;
   logout: () => void;
 }
 
@@ -52,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVendor(null);
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    setUser(prev => prev ? { ...prev, ...updates } : prev);
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -72,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginUser,
         loginVendor,
         loginAdmin,
+        updateUser,
         logout,
       }}
     >

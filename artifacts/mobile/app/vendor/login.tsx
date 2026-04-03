@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as Haptics from "expo-haptics";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 
 export default function VendorLoginScreen() {
   const colors = useColors();
@@ -29,7 +30,11 @@ export default function VendorLoginScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: isWeb ? 67 + 40 : 40 }]}>
+    <KeyboardAwareScrollViewCompat
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={{ paddingTop: isWeb ? 67 + 40 : 40, paddingBottom: 60 }}
+      bounces={false}
+    >
       <Text style={[styles.title, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Vendor Portal</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Manage your restaurant listing</Text>
 
@@ -43,7 +48,7 @@ export default function VendorLoginScreen() {
           {mutation.isPending ? <ActivityIndicator color={colors.primaryForeground} /> : <Text style={[styles.btnText, { color: colors.primaryForeground, fontFamily: "Inter_600SemiBold" }]}>Log in</Text>}
         </Pressable>
       </View>
-    </View>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

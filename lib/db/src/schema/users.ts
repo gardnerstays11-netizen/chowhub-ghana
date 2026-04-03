@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   password: text("password").notNull(),
   city: text("city").notNull(),
   role: text("role").notNull().default("user"),
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

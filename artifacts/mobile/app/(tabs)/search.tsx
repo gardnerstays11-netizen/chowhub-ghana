@@ -25,6 +25,7 @@ const FALLBACK_CATEGORIES = [
 
 const SORT_OPTIONS = [
   { label: "Relevant", value: "" },
+  { label: "Nearest", value: "nearest" },
   { label: "Top Rated", value: "highest_rated" },
   { label: "Most Reviewed", value: "most_reviewed" },
   { label: "Newest", value: "newest" },
@@ -46,7 +47,7 @@ export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ category?: string; occasion?: string }>();
+  const params = useLocalSearchParams<{ category?: string; occasion?: string; nearme?: string }>();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(params.category || "");
@@ -56,6 +57,9 @@ export default function SearchScreen() {
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [showRecent, setShowRecent] = useState(false);
+  const [nearMeActive, setNearMeActive] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const isWeb = Platform.OS === "web";
   const logSearchMut = useLogSearch();
   const searchLoggedRef = useRef<string>("");
@@ -118,11 +122,40 @@ export default function SearchScreen() {
     { query: { enabled: query.length >= 2 && showAutocomplete } as any }
   );
 
+  const handleNearMe = useCallback(() => {
+    if (nearMeActive) {
+      setNearMeActive(false);
+      setUserCoords(null);
+      if (selectedSort === "nearest") setSelectedSort("");
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setNearMeActive(true);
+        setSelectedSort("nearest");
+        setLocationLoading(false);
+      },
+      () => { setLocationLoading(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, [nearMeActive, selectedSort]);
+
+  useEffect(() => {
+    if (params.nearme === "1" && !nearMeActive && !userCoords) {
+      handleNearMe();
+    }
+  }, [params.nearme]);
+
   const { data, isLoading } = useSearchListings({
     q: debouncedQuery || undefined,
     category: selectedCategory || undefined,
     sort: selectedSort || undefined,
     occasion: selectedOccasion || undefined,
+    lat: nearMeActive && userCoords ? userCoords.lat : undefined,
+    lng: nearMeActive && userCoords ? userCoords.lng : undefined,
     limit: 30,
   });
 
@@ -143,10 +176,17 @@ export default function SearchScreen() {
     if (data && debouncedQuery.length >= 2) logCurrentSearch();
   }, [data, debouncedQuery, logCurrentSearch]);
 
-  const handleSuggestionPress = (slug: string) => {
+  const handleSuggestionPress = (item: any) => {
     setShowAutocomplete(false);
     setShowRecent(false);
-    router.push(`/listing/${slug}` as any);
+    if (item.type === "dish" || !item.slug) {
+      setQuery(item.name);
+      setDebouncedQuery(item.name);
+      saveSearch(item.name);
+      Keyboard.dismiss();
+    } else {
+      router.push(`/listing/${item.slug}` as any);
+    }
   };
 
   const handleSearchSubmit = () => {
@@ -168,7 +208,8 @@ export default function SearchScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.searchHeader, { backgroundColor: colors.card, paddingTop: isWeb ? 67 + 12 : 12 }]}>
+      <View style={[styles.searchHeader, { backgroundColor: colors.card, paddingTop: isWeb ? 67 + 12 : insets.top + 16 }]}>
+        <Text style={[styles.screenTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Search</Text>
         <View style={[styles.inputWrap, { backgroundColor: colors.muted }]}>
           <Feather name="search" size={16} color={colors.mutedForeground} />
           <TextInput
@@ -226,6 +267,25 @@ export default function SearchScreen() {
           />
 
           <Pressable
+            onPress={handleNearMe}
+            disabled={locationLoading}
+            style={({ pressed }) => [
+              styles.sortBtn,
+              {
+                borderColor: nearMeActive ? colors.primary : colors.border,
+                backgroundColor: nearMeActive ? colors.primary : "transparent",
+                opacity: pressed || locationLoading ? 0.7 : 1,
+              },
+            ]}
+          >
+            {locationLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather name="navigation" size={14} color={nearMeActive ? "#fff" : colors.mutedForeground} />
+            )}
+          </Pressable>
+
+          <Pressable
             onPress={() => setShowSortOptions(!showSortOptions)}
             style={({ pressed }) => [
               styles.sortBtn,
@@ -268,7 +328,7 @@ export default function SearchScreen() {
           showsHorizontalScrollIndicator={false}
           data={OCCASIONS}
           keyExtractor={(item) => item.value}
-          contentContainerStyle={{ gap: 6, paddingHorizontal: 4, paddingBottom: 10, paddingTop: 2 }}
+          contentContainerStyle={{ gap: 6, paddingHorizontal: 4 }}
           renderItem={({ item }) => {
             const active = selectedOccasion === item.value;
             return (
@@ -317,23 +377,26 @@ export default function SearchScreen() {
 
       {showAutocomplete && suggestions && suggestions.length > 0 && (
         <View style={[styles.autocomplete, { backgroundColor: colors.card }]}>
-          {suggestions.map((s: any) => (
-            <Pressable
-              key={s.id}
-              onPress={() => handleSuggestionPress(s.slug)}
-              style={({ pressed }) => [styles.autoItem, { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <View style={[styles.autoIconWrap, { backgroundColor: colors.primary + "0D" }]}>
-                <Feather name="map-pin" size={13} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.autoName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{s.name}</Text>
-                <Text style={[styles.autoMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-                  {s.category.replace(/_/g, " ")} · {s.area}, {s.city}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
+          {suggestions.map((s: any) => {
+            const isDish = s.type === "dish" || s.category === "dish";
+            return (
+              <Pressable
+                key={s.id}
+                onPress={() => handleSuggestionPress(s)}
+                style={({ pressed }) => [styles.autoItem, { borderBottomColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <View style={[styles.autoIconWrap, { backgroundColor: isDish ? colors.secondary + "15" : colors.primary + "0D" }]}>
+                  <Feather name={isDish ? "coffee" : "map-pin"} size={13} color={isDish ? colors.secondary as string : colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.autoName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{s.name}</Text>
+                  <Text style={[styles.autoMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                    {isDish ? "Dish · Tap to search" : `${(s.category || "").replace(/_/g, " ")} · ${s.area || ""}, ${s.city || ""}`}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </View>
       )}
 
@@ -342,7 +405,7 @@ export default function SearchScreen() {
         keyExtractor={(item: any) => item.id}
         numColumns={1}
         contentContainerStyle={{ padding: 16, paddingBottom: isWeb ? 34 : 100 }}
-        renderItem={({ item }: { item: any }) => <ListingCard listing={item} />}
+        renderItem={({ item }: { item: any }) => <ListingCard listing={item} showDistance={nearMeActive} />}
         onScrollBeginDrag={() => { setShowAutocomplete(false); setShowRecent(false); }}
         ListHeaderComponent={
           <View style={styles.resultHeader}>
@@ -400,21 +463,23 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   searchHeader: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 14,
     shadowColor: "#1a2b1f",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
+    gap: 12,
   },
-  inputWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 46, borderRadius: 14 },
+  screenTitle: { fontSize: 24, letterSpacing: -0.4, marginBottom: 2 },
+  inputWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, height: 48, borderRadius: 14 },
   input: { flex: 1, fontSize: 15, height: 46 },
   clearBtn: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  filtersRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 12 },
+  filtersRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   chipText: { fontSize: 12 },
   sortBtn: { borderWidth: 1, padding: 9, borderRadius: 10 },
-  sortRow: { flexDirection: "row", gap: 8, paddingTop: 10 },
+  sortRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   sortChip: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   resultCount: { fontSize: 13 },

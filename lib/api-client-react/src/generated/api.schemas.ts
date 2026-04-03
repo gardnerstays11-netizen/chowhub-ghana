@@ -30,6 +30,7 @@ export interface UpdateUserBody {
   name?: string;
   phone?: string;
   city?: string;
+  avatarUrl?: string | null;
 }
 
 export interface User {
@@ -39,6 +40,7 @@ export interface User {
   phone: string;
   city: string;
   role?: string;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 
@@ -349,6 +351,13 @@ export interface Order {
   deliveryAddress?: string | null;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  totalAmount?: number | null;
+  paymentStatus: string;
+  /** @nullable */
+  paymentReference?: string | null;
+  /** @nullable */
+  paymentChannel?: string | null;
   status: string;
   /** @nullable */
   listingName?: string | null;
@@ -376,6 +385,8 @@ export interface CreateOrderBody {
   deliveryAddress?: string | null;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  totalAmount?: number | null;
 }
 
 export type UpdateOrderStatusBodyStatus =
@@ -723,6 +734,83 @@ export interface SiteSettingsUpdate {
   custom_head_scripts?: string;
   primary_color?: string;
   secondary_color?: string;
+}
+
+export type InitializePaymentBodyPaymentType =
+  (typeof InitializePaymentBodyPaymentType)[keyof typeof InitializePaymentBodyPaymentType];
+
+export const InitializePaymentBodyPaymentType = {
+  order: "order",
+  subscription: "subscription",
+} as const;
+
+export type InitializePaymentBodyMetadata = { [key: string]: unknown };
+
+export interface InitializePaymentBody {
+  amount: number;
+  email: string;
+  paymentType: InitializePaymentBodyPaymentType;
+  /** @nullable */
+  orderId?: string | null;
+  /** @nullable */
+  subscriptionId?: string | null;
+  /** @nullable */
+  callbackUrl?: string | null;
+  metadata?: InitializePaymentBodyMetadata;
+}
+
+export interface InitializeSubscriptionBody {
+  vendorId: string;
+  packageSlug: string;
+  amount: number;
+  email: string;
+  /** @nullable */
+  callbackUrl?: string | null;
+}
+
+export interface PaymentInitResponse {
+  authorization_url: string;
+  access_code: string;
+  reference: string;
+}
+
+export interface PaymentVerifyResponse {
+  reference: string;
+  status: string;
+  amount: number;
+  currency: string;
+  /** @nullable */
+  channel?: string | null;
+  /** @nullable */
+  paidAt?: string | null;
+  /** @nullable */
+  paymentType?: string | null;
+}
+
+export interface Payment {
+  id: string;
+  reference: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentType: string;
+  /** @nullable */
+  orderId?: string | null;
+  /** @nullable */
+  subscriptionId?: string | null;
+  /** @nullable */
+  userId?: string | null;
+  /** @nullable */
+  vendorId?: string | null;
+  email: string;
+  /** @nullable */
+  channel?: string | null;
+  /** @nullable */
+  metadata?: string | null;
+  /** @nullable */
+  paidAt?: string | null;
+  createdAt: string;
 }
 
 export type SearchListingsParams = {

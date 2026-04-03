@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Linking, ActivityIndicator, Platform, Alert, TextInput, Modal } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Linking, ActivityIndicator, Platform, Alert, TextInput, Modal, KeyboardAvoidingView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
-import { useGetListingBySlug, useGetListingMenu, useGetListingReviews, useCreateOrder } from "@workspace/api-client-react";
+import { useGetListingBySlug, useGetListingMenu, useGetListingReviews, useCreateOrder, useInitializePayment, useVerifyPayment } from "@workspace/api-client-react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useMemo } from "react";
+import * as WebBrowser from "expo-web-browser";
 
 interface CartItem {
   id: string;
@@ -27,12 +28,15 @@ export default function ListingDetailScreen() {
   const { data: reviewsData } = useGetListingReviews(listing?.id || "", {}, { query: { enabled: !!listing?.id } as any });
   const reviews = reviewsData?.reviews;
   const createOrderMut = useCreateOrder();
+  const initPaymentMut = useInitializePayment();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [orderType, setOrderType] = useState<"pickup" | "delivery">("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [note, setNote] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"whatsapp" | "paystack">("whatsapp");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const cartTotal = useMemo(() => cart.reduce((sum, i) => sum + i.price * i.quantity, 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
@@ -67,21 +71,83 @@ export default function ListingDetailScreen() {
       return;
     }
 
+    const total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
+
     try {
-      await createOrderMut.mutateAsync({
+      const order = await createOrderMut.mutateAsync({
         data: {
           listingId: listing!.id,
           items: cart.map(c => ({ name: c.name, quantity: c.quantity, price: c.price })),
           orderType,
           deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : null,
           note: note.trim() || null,
+          totalAmount: total,
         },
       });
-      setCart([]);
-      setShowCheckout(false);
-      setNote("");
-      setDeliveryAddress("");
-      Alert.alert("Order Placed!", "Your order has been sent to the restaurant. They will prepare it shortly.");
+
+      if (paymentMethod === "paystack") {
+        setIsProcessingPayment(true);
+        try {
+          const userEmail = (listing as any)?.email || "customer@chowhub.gh";
+          const payResult = await initPaymentMut.mutateAsync({
+            data: {
+              amount: total,
+              email: userEmail,
+              paymentType: "order",
+              orderId: (order as any).id,
+            },
+          });
+
+          const authUrl = (payResult as any).authorization_url;
+          if (authUrl) {
+            if (Platform.OS === "web") {
+              window.open(authUrl, "_blank");
+            } else {
+              await WebBrowser.openBrowserAsync(authUrl);
+            }
+          }
+
+          setCart([]);
+          setShowCheckout(false);
+          setNote("");
+          setDeliveryAddress("");
+          Alert.alert("Payment Initiated", "Complete your payment in the browser. Your order will be confirmed once payment is verified.");
+        } catch (payErr: any) {
+          Alert.alert("Payment Error", payErr?.message || "Failed to initialize payment. Your order was created but not yet paid.");
+        } finally {
+          setIsProcessingPayment(false);
+        }
+        return;
+      }
+
+      if (paymentMethod === "whatsapp") {
+        const orderNum = (order as any).id?.slice(0, 8).toUpperCase() || "N/A";
+        const itemLines = cart.map(c => `• ${c.name} x${c.quantity} — GHS ${(c.price * c.quantity).toFixed(2)}`).join("\n");
+        const currentNote = note.trim();
+        const currentAddress = deliveryAddress.trim();
+        let msg = `🍽️ *New Order from ChowHub*\n\n`;
+        msg += `*Order #${orderNum}*\n`;
+        msg += `*Restaurant:* ${listing!.name}\n`;
+        msg += `*Type:* ${orderType === "delivery" ? "Delivery" : "Pickup"}\n`;
+        if (orderType === "delivery" && currentAddress) msg += `*Deliver to:* ${currentAddress}\n`;
+        msg += `\n*Items:*\n${itemLines}\n\n`;
+        msg += `*Total: GHS ${total.toFixed(2)}*\n`;
+        if (currentNote) msg += `\n*Note:* ${currentNote}\n`;
+        msg += `\nPlease confirm this order. Thank you! 🙏`;
+
+        const waNumber = listing!.whatsapp?.replace(/[^0-9]/g, "") || listing!.phone?.replace(/[^0-9]/g, "") || "";
+
+        setCart([]);
+        setShowCheckout(false);
+        setNote("");
+        setDeliveryAddress("");
+
+        if (waNumber.length >= 10) {
+          const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
+          Linking.openURL(waUrl);
+        }
+        Alert.alert("Order Sent!", "Your order has been placed and sent to the restaurant via WhatsApp.");
+      }
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to place order");
     }
@@ -252,6 +318,32 @@ export default function ListingDetailScreen() {
             </View>
           )}
 
+          <View style={[styles.sectionCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Location</Text>
+            <View style={styles.locationRow}>
+              <Feather name="map-pin" size={15} color={colors.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.locationAddress, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{listing.address}</Text>
+                {listing.landmark && <Text style={[styles.locationSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Near {listing.landmark}</Text>}
+                <Text style={[styles.locationSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{listing.area}, {listing.city}</Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => {
+                if (listing.lat && listing.lng) {
+                  Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${listing.lat},${listing.lng}`);
+                } else {
+                  const addr = encodeURIComponent(`${listing.address}, ${listing.area}, ${listing.city}, Ghana`);
+                  Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${addr}`);
+                }
+              }}
+              style={({ pressed }) => [styles.directionsFullBtn, { borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Feather name="navigation" size={15} color="#4285F4" />
+              <Text style={[styles.directionsBtnText, { fontFamily: "Inter_600SemiBold" }]}>Get Directions</Text>
+            </Pressable>
+          </View>
+
           {listing.openingHours && (
             <View style={[styles.sectionCard, { backgroundColor: colors.card }]}>
               <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Opening Hours</Text>
@@ -312,21 +404,29 @@ export default function ListingDetailScreen() {
       )}
 
       <Modal visible={showCheckout} animationType="slide" transparent onRequestClose={() => setShowCheckout(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <Pressable style={styles.modalDismiss} onPress={() => setShowCheckout(false)} />
           <View style={[styles.checkoutSheet, { backgroundColor: colors.card }]}>
+            <View style={styles.checkoutHandle}>
+              <View style={[styles.handleBar, { backgroundColor: colors.border }]} />
+            </View>
+
             <View style={styles.checkoutHeader}>
-              <Text style={[styles.checkoutTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Your Order</Text>
-              <Pressable onPress={() => setShowCheckout(false)} hitSlop={10}>
-                <Feather name="x" size={22} color={colors.foreground} />
+              <View>
+                <Text style={[styles.checkoutTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Your Order</Text>
+                <Text style={[styles.checkoutSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{listing?.name}</Text>
+              </View>
+              <Pressable onPress={() => setShowCheckout(false)} hitSlop={12} style={[styles.closeBtn, { backgroundColor: colors.muted }]}>
+                <Feather name="x" size={18} color={colors.foreground} />
               </Pressable>
             </View>
 
-            <ScrollView style={styles.checkoutBody} showsVerticalScrollIndicator={false}>
-              {cart.map(item => (
-                <View key={item.id} style={[styles.checkoutItem, { borderBottomColor: colors.border }]}>
-                  <View style={{ flex: 1 }}>
+            <ScrollView style={styles.checkoutBody} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              {cart.map((item, idx) => (
+                <View key={item.id} style={[styles.checkoutItem, idx < cart.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>
+                  <View style={styles.checkoutItemLeft}>
                     <Text style={[styles.checkoutItemName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>{item.name}</Text>
-                    <Text style={[styles.checkoutItemPrice, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>GHS {item.price.toFixed(2)} each</Text>
+                    <Text style={[styles.checkoutItemPrice, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>GHS {item.price.toFixed(2)}</Text>
                   </View>
                   <View style={styles.qtyControl}>
                     <Pressable onPress={() => updateQuantity(item.id, -1)} style={[styles.qtyBtn, { backgroundColor: colors.muted }]}>
@@ -343,22 +443,30 @@ export default function ListingDetailScreen() {
                 </View>
               ))}
 
+              <View style={[styles.checkoutDivider, { backgroundColor: colors.border }]} />
+
               <View style={styles.orderTypeSection}>
-                <Text style={[styles.orderTypeLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Order Type</Text>
+                <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>How do you want it?</Text>
                 <View style={styles.orderTypeRow}>
                   <Pressable
                     onPress={() => setOrderType("pickup")}
-                    style={[styles.orderTypeBtn, { backgroundColor: orderType === "pickup" ? colors.primary : colors.muted }]}
+                    style={[styles.orderTypeBtn, orderType === "pickup" ? { backgroundColor: colors.primary } : { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border }]}
                   >
-                    <Feather name="shopping-bag" size={16} color={orderType === "pickup" ? "#fff" : colors.foreground} />
-                    <Text style={[styles.orderTypeText, { color: orderType === "pickup" ? "#fff" : colors.foreground, fontFamily: "Inter_500Medium" }]}>Pickup</Text>
+                    <View style={[styles.orderTypeIcon, { backgroundColor: orderType === "pickup" ? "rgba(255,255,255,0.2)" : colors.muted }]}>
+                      <Feather name="shopping-bag" size={18} color={orderType === "pickup" ? "#fff" : colors.primary} />
+                    </View>
+                    <Text style={[styles.orderTypeText, { color: orderType === "pickup" ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Pickup</Text>
+                    <Text style={[styles.orderTypeHint, { color: orderType === "pickup" ? "rgba(255,255,255,0.7)" : colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Collect it yourself</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => setOrderType("delivery")}
-                    style={[styles.orderTypeBtn, { backgroundColor: orderType === "delivery" ? colors.primary : colors.muted }]}
+                    style={[styles.orderTypeBtn, orderType === "delivery" ? { backgroundColor: colors.primary } : { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border }]}
                   >
-                    <Feather name="truck" size={16} color={orderType === "delivery" ? "#fff" : colors.foreground} />
-                    <Text style={[styles.orderTypeText, { color: orderType === "delivery" ? "#fff" : colors.foreground, fontFamily: "Inter_500Medium" }]}>Delivery</Text>
+                    <View style={[styles.orderTypeIcon, { backgroundColor: orderType === "delivery" ? "rgba(255,255,255,0.2)" : colors.muted }]}>
+                      <Feather name="truck" size={18} color={orderType === "delivery" ? "#fff" : colors.primary} />
+                    </View>
+                    <Text style={[styles.orderTypeText, { color: orderType === "delivery" ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Delivery</Text>
+                    <Text style={[styles.orderTypeHint, { color: orderType === "delivery" ? "rgba(255,255,255,0.7)" : colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Brought to your door</Text>
                   </Pressable>
                 </View>
               </View>
@@ -366,48 +474,95 @@ export default function ListingDetailScreen() {
               {orderType === "delivery" && (
                 <View style={styles.fieldGroup}>
                   <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Delivery Address</Text>
-                  <TextInput
-                    value={deliveryAddress}
-                    onChangeText={setDeliveryAddress}
-                    placeholder="Enter delivery address"
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[styles.fieldInput, { backgroundColor: colors.muted, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                  />
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <Feather name="map-pin" size={16} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                    <TextInput
+                      value={deliveryAddress}
+                      onChangeText={setDeliveryAddress}
+                      placeholder="Enter delivery address"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[styles.fieldInputInline, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                    />
+                  </View>
                 </View>
               )}
 
               <View style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>Note (optional)</Text>
-                <TextInput
-                  value={note}
-                  onChangeText={setNote}
-                  placeholder="Special instructions"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.fieldInput, { backgroundColor: colors.muted, color: colors.foreground, fontFamily: "Inter_400Regular" }]}
-                  multiline
-                />
+                <View style={[styles.inputWrapper, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                  <Feather name="edit-3" size={16} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                  <TextInput
+                    value={note}
+                    onChangeText={setNote}
+                    placeholder="E.g. extra pepper, no onions..."
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[styles.fieldInputInline, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
+                    multiline
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.checkoutDivider, { backgroundColor: colors.border }]} />
+
+              <View style={styles.orderTypeSection}>
+                <Text style={[styles.sectionLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Payment Method</Text>
+                <View style={styles.orderTypeRow}>
+                  <Pressable
+                    onPress={() => setPaymentMethod("whatsapp")}
+                    style={[styles.orderTypeBtn, paymentMethod === "whatsapp" ? { backgroundColor: "#25D366" } : { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border }]}
+                  >
+                    <View style={[styles.orderTypeIcon, { backgroundColor: paymentMethod === "whatsapp" ? "rgba(255,255,255,0.2)" : colors.muted }]}>
+                      <Feather name="message-circle" size={18} color={paymentMethod === "whatsapp" ? "#fff" : "#25D366"} />
+                    </View>
+                    <Text style={[styles.orderTypeText, { color: paymentMethod === "whatsapp" ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>WhatsApp</Text>
+                    <Text style={[styles.orderTypeHint, { color: paymentMethod === "whatsapp" ? "rgba(255,255,255,0.7)" : colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Pay on arrival</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setPaymentMethod("paystack")}
+                    style={[styles.orderTypeBtn, paymentMethod === "paystack" ? { backgroundColor: "#0BA4DB" } : { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.border }]}
+                  >
+                    <View style={[styles.orderTypeIcon, { backgroundColor: paymentMethod === "paystack" ? "rgba(255,255,255,0.2)" : colors.muted }]}>
+                      <Feather name="credit-card" size={18} color={paymentMethod === "paystack" ? "#fff" : "#0BA4DB"} />
+                    </View>
+                    <Text style={[styles.orderTypeText, { color: paymentMethod === "paystack" ? "#fff" : colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Pay Online</Text>
+                    <Text style={[styles.orderTypeHint, { color: paymentMethod === "paystack" ? "rgba(255,255,255,0.7)" : colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Card / Mobile Money</Text>
+                  </Pressable>
+                </View>
               </View>
             </ScrollView>
 
-            <View style={[styles.checkoutFooter, { borderTopColor: colors.border }]}>
+            <View style={[styles.checkoutFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+              <View style={styles.subtotalRow}>
+                <Text style={[styles.subtotalLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Subtotal ({cart.reduce((s, c) => s + c.quantity, 0)} items)</Text>
+                <Text style={[styles.subtotalValue, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>GHS {cartTotal.toFixed(2)}</Text>
+              </View>
               <View style={styles.totalRow}>
-                <Text style={[styles.totalLabel, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>Total</Text>
+                <Text style={[styles.totalLabel, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Total</Text>
                 <Text style={[styles.totalAmount, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>GHS {cartTotal.toFixed(2)}</Text>
               </View>
               <Pressable
                 onPress={handlePlaceOrder}
-                disabled={createOrderMut.isPending}
-                style={({ pressed }) => [styles.placeOrderBtn, { backgroundColor: colors.primary, opacity: pressed || createOrderMut.isPending ? 0.8 : 1 }]}
+                disabled={createOrderMut.isPending || isProcessingPayment}
+                style={({ pressed }) => [styles.placeOrderBtn, {
+                  backgroundColor: paymentMethod === "paystack" ? "#0BA4DB" : "#25D366",
+                  opacity: pressed || createOrderMut.isPending || isProcessingPayment ? 0.7 : 1,
+                  width: "100%",
+                }]}
               >
-                {createOrderMut.isPending ? (
+                {(createOrderMut.isPending || isProcessingPayment) ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={[styles.placeOrderText, { fontFamily: "Inter_600SemiBold" }]}>Place Order</Text>
+                  <>
+                    <Feather name={paymentMethod === "paystack" ? "credit-card" : "message-circle"} size={18} color="#fff" />
+                    <Text style={[styles.placeOrderText, { fontFamily: "Inter_600SemiBold" }]}>
+                      {paymentMethod === "paystack" ? `Pay GHS ${cartTotal.toFixed(2)}` : "Order via WhatsApp"}
+                    </Text>
+                  </>
                 )}
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -447,6 +602,19 @@ const styles = StyleSheet.create({
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 24, paddingVertical: 13, borderRadius: 12, flex: 1, justifyContent: "center" },
   callBtn: { backgroundColor: "#24503a" },
   waBtn: { backgroundColor: "#25D366" },
+  locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 14 },
+  locationAddress: { fontSize: 14, lineHeight: 20 },
+  locationSub: { fontSize: 13, lineHeight: 18, marginTop: 1 },
+  directionsFullBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  directionsBtnText: { fontSize: 14, color: "#4285F4" },
   actionText: { fontSize: 14 },
   sectionCard: {
     padding: 18,
@@ -524,27 +692,43 @@ const styles = StyleSheet.create({
   cartBtnText: { color: "#fff", fontSize: 16, flex: 1, textAlign: "center" },
   cartTotal: { color: "#fff", fontSize: 16 },
 
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  checkoutSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", overflow: "hidden" },
-  checkoutHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  checkoutTitle: { fontSize: 20, letterSpacing: -0.3 },
-  checkoutBody: { paddingHorizontal: 20, maxHeight: 400 },
-  checkoutItem: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
-  checkoutItemName: { fontSize: 14 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalDismiss: { flex: 1 },
+  checkoutSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "88%", overflow: "hidden" },
+  checkoutHandle: { alignItems: "center", paddingTop: 10, paddingBottom: 4 },
+  handleBar: { width: 40, height: 4, borderRadius: 2 },
+  checkoutHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  checkoutTitle: { fontSize: 22, letterSpacing: -0.4 },
+  checkoutSubtitle: { fontSize: 13, marginTop: 2 },
+  closeBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
+  checkoutBody: { paddingHorizontal: 20 },
+  checkoutItem: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: 10 },
+  checkoutItemLeft: { flex: 1 },
+  checkoutItemName: { fontSize: 14, lineHeight: 20 },
   checkoutItemPrice: { fontSize: 12, marginTop: 2 },
-  checkoutLineTotal: { fontSize: 14, minWidth: 70, textAlign: "right" },
-  orderTypeSection: { marginTop: 20 },
-  orderTypeLabel: { fontSize: 15, marginBottom: 10 },
-  orderTypeRow: { flexDirection: "row", gap: 12 },
-  orderTypeBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 12 },
-  orderTypeText: { fontSize: 14 },
-  fieldGroup: { marginTop: 16 },
-  fieldLabel: { fontSize: 13, marginBottom: 6 },
-  fieldInput: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: 10, fontSize: 14 },
-  checkoutFooter: { padding: 20, borderTopWidth: 1, gap: 14 },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 15 },
-  totalAmount: { fontSize: 22, letterSpacing: -0.5 },
-  placeOrderBtn: { paddingVertical: 16, borderRadius: 14, alignItems: "center" },
-  placeOrderText: { color: "#fff", fontSize: 16 },
+  checkoutLineTotal: { fontSize: 14, minWidth: 68, textAlign: "right" },
+  checkoutDivider: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
+  orderTypeSection: { marginTop: 12 },
+  sectionLabel: { fontSize: 15, marginBottom: 12, letterSpacing: -0.2 },
+  orderTypeRow: { flexDirection: "row", gap: 10 },
+  orderTypeBtn: { flex: 1, alignItems: "center", paddingVertical: 16, paddingHorizontal: 10, borderRadius: 14, gap: 6 },
+  orderTypeIcon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  orderTypeText: { fontSize: 13 },
+  orderTypeHint: { fontSize: 11 },
+  fieldGroup: { marginTop: 18 },
+  fieldLabel: { fontSize: 13, marginBottom: 8 },
+  inputWrapper: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
+  fieldInputInline: { flex: 1, fontSize: 14, padding: 0, minHeight: 20 },
+  checkoutFooter: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24, borderTopWidth: 1, gap: 6 },
+  subtotalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 },
+  subtotalLabel: { fontSize: 13 },
+  subtotalValue: { fontSize: 13 },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  totalLabel: { fontSize: 16 },
+  totalAmount: { fontSize: 24, letterSpacing: -0.5 },
+  actionBtns: { flexDirection: "row", gap: 10 },
+  placeOrderBtn: { flex: 1, paddingVertical: 16, borderRadius: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 },
+  placeOrderText: { color: "#fff", fontSize: 15 },
+  whatsappBtn: { paddingVertical: 16, paddingHorizontal: 20, borderRadius: 14, alignItems: "center", backgroundColor: "#25D366", flexDirection: "row", justifyContent: "center", gap: 8 },
+  whatsappBtnText: { color: "#fff", fontSize: 14 },
 });

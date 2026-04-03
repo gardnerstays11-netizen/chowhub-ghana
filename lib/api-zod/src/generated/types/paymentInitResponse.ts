@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateUserBody {
-  name?: string;
-  phone?: string;
-  city?: string;
-  avatarUrl?: string | null;
+export interface PaymentInitResponse {
+  authorization_url: string;
+  access_code: string;
+  reference: string;
 }

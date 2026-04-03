@@ -38,6 +38,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       phone: user.phone,
       city: user.city,
       role: user.role,
+      avatarUrl: user.avatarUrl,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -72,6 +73,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
       phone: user.phone,
       city: user.city,
       role: user.role,
+      avatarUrl: user.avatarUrl,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -91,17 +93,19 @@ router.get("/auth/me", authMiddleware, async (req, res): Promise<void> => {
     phone: user.phone,
     city: user.city,
     role: user.role,
+    avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
   });
 });
 
 router.patch("/auth/me/update", authMiddleware, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
-  const { name, phone, city } = req.body;
+  const { name, phone, city, avatarUrl } = req.body;
   const updates: any = {};
   if (name !== undefined) updates.name = name;
   if (phone !== undefined) updates.phone = phone;
   if (city !== undefined) updates.city = city;
+  if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
 
   const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, userId)).returning();
   if (!user) {
@@ -115,6 +119,7 @@ router.patch("/auth/me/update", authMiddleware, async (req, res): Promise<void> 
     phone: user.phone,
     city: user.city,
     role: user.role,
+    avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
   });
 });

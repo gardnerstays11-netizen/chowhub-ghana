@@ -16,6 +16,7 @@ import eventsRouter from "./events";
 import siteSettingsRouter from "./site-settings";
 import categoriesRouter from "./categories";
 import editorsPicksRouter from "./editors-picks";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(storageRouter);
 router.use(eventsRouter);
 router.use(siteSettingsRouter);
 router.use(editorsPicksRouter);
+router.use(paymentsRouter);
 
 export default router;

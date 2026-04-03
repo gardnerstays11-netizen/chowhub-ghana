@@ -274,18 +274,18 @@ export default function Home() {
         </section>
       )}
 
-      <section className="py-14">
+      <section className="py-8 lg:py-14">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl">Browse by category</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg lg:text-2xl font-semibold">Browse by category</h2>
             <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
               View all <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide lg:grid lg:grid-cols-6 lg:gap-3 lg:overflow-visible">
             {(categories || []).map((cat) => (
-              <Link key={cat.slug} href={`/search?category=${cat.slug}`} className="group block">
-                <div className="border border-border rounded-lg px-4 py-5 text-center hover:border-primary/30 hover:bg-primary/[0.03] transition-colors">
+              <Link key={cat.slug} href={`/search?category=${cat.slug}`} className="group block shrink-0">
+                <div className="border border-border rounded-lg px-4 py-2.5 lg:py-5 text-center hover:border-primary/30 hover:bg-primary/[0.03] transition-colors whitespace-nowrap">
                   <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{cat.name}</span>
                 </div>
               </Link>
@@ -294,18 +294,18 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-10">
+      <section className="pb-8 lg:py-10">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl mb-5">Find by occasion</h2>
-          <div className="flex flex-wrap gap-2.5">
+          <h2 className="text-lg lg:text-2xl font-semibold mb-3">Find by occasion</h2>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide lg:flex-wrap lg:gap-2.5 lg:overflow-visible">
             {OCCASIONS.map(occ => (
               <Link
                 key={occ.value}
                 href={`/search?occasion=${occ.value}`}
-                className="group inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-lg hover:border-primary/30 hover:bg-primary/[0.03] transition-colors"
+                className="group inline-flex items-center gap-2 px-3.5 py-2 lg:px-4 lg:py-2.5 border border-border rounded-lg hover:border-primary/30 hover:bg-primary/[0.03] transition-colors shrink-0"
               >
                 <occ.icon className="w-4 h-4 text-secondary" />
-                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{occ.label}</span>
+                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors whitespace-nowrap">{occ.label}</span>
               </Link>
             ))}
           </div>

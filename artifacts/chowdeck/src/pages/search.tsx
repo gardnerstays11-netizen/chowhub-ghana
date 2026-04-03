@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "@/components/listing-card";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
-import { Search, X, MapPin, SlidersHorizontal, ChevronDown, ArrowUpDown } from "lucide-react";
+import { Search, X, MapPin, SlidersHorizontal, ChevronDown, ArrowUpDown, Navigation, Loader2, UtensilsCrossed } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePageMeta } from "@/hooks/use-page-meta";
 
@@ -57,6 +57,7 @@ const PRICE_RANGES = [
 
 const SORT_OPTIONS = [
   { label: "Most Relevant", value: "" },
+  { label: "Nearest", value: "nearest" },
   { label: "Highest Rated", value: "highest_rated" },
   { label: "Most Reviewed", value: "most_reviewed" },
   { label: "Newest", value: "newest" },
@@ -102,6 +103,10 @@ export default function SearchPage() {
   const [acceptsOrders, setAcceptsOrders] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [showFilters, setShowFilters] = useState(!!occasionParam);
+  const [nearMeActive, setNearMeActive] = useState(false);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { data: categoriesData } = useCategories();
 
@@ -137,6 +142,8 @@ export default function SearchPage() {
     occasion: selectedOccasion || undefined,
     accepts_reservations: acceptsReservations ? "true" : undefined,
     accepts_orders: acceptsOrders ? "true" : undefined,
+    lat: nearMeActive && userCoords ? userCoords.lat : undefined,
+    lng: nearMeActive && userCoords ? userCoords.lng : undefined,
     limit: 30,
   });
 
@@ -170,9 +177,14 @@ export default function SearchPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const handleSuggestionClick = (slug: string) => {
+  const handleSuggestionClick = (item: any) => {
     setShowAutocomplete(false);
-    setLocation(`/listings/${slug}`);
+    if (item.type === "dish" || !item.slug) {
+      setSearch(item.name);
+      setDebouncedSearch(item.name);
+    } else {
+      setLocation(`/listings/${item.slug}`);
+    }
   };
 
   const toggleCity = (city: string) => setSelectedCity(prev => prev === city ? "" : city);
@@ -181,6 +193,41 @@ export default function SearchPage() {
   const togglePrice = (p: string) => setSelectedPrice(prev => prev === p ? "" : p);
   const toggleDiningStyle = (d: string) => setSelectedDiningStyle(prev => prev === d ? "" : d);
   const toggleOccasion = (o: string) => setSelectedOccasion(prev => prev === o ? "" : o);
+
+  const handleNearMe = () => {
+    if (nearMeActive) {
+      setNearMeActive(false);
+      setUserCoords(null);
+      setLocationError("");
+      if (selectedSort === "nearest") setSelectedSort("");
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setNearMeActive(true);
+        setSelectedSort("nearest");
+        setLocationLoading(false);
+      },
+      (error) => {
+        setLocationLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError("Location access denied. Please enable location in your browser settings.");
+        } else {
+          setLocationError("Could not get your location. Please try again.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const clearFilters = () => {
     setSelectedCity("");
@@ -194,12 +241,15 @@ export default function SearchPage() {
     setAcceptsOrders(false);
     setSearch("");
     setDebouncedSearch("");
+    setNearMeActive(false);
+    setUserCoords(null);
+    setLocationError("");
   };
 
   const activeFilterCount =
     (selectedCity ? 1 : 0) + (selectedCategory ? 1 : 0) + (selectedCuisine ? 1 : 0) +
     (selectedPrice ? 1 : 0) + (selectedDiningStyle ? 1 : 0) + (selectedOccasion ? 1 : 0) +
-    (acceptsReservations ? 1 : 0) + (acceptsOrders ? 1 : 0);
+    (acceptsReservations ? 1 : 0) + (acceptsOrders ? 1 : 0) + (nearMeActive ? 1 : 0);
 
   return (
     <MainLayout>
@@ -227,22 +277,44 @@ export default function SearchPage() {
 
               {showAutocomplete && suggestions && suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-                  {suggestions.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleSuggestionClick(s.slug)}
-                      className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
-                    >
-                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <div>
-                        <div className="text-sm font-medium">{s.name}</div>
-                        <div className="text-xs text-muted-foreground capitalize">{s.category.replace(/_/g, " ")} &middot; {s.area}, {s.city}</div>
-                      </div>
-                    </button>
-                  ))}
+                  {suggestions.map((s: any) => {
+                    const isDish = s.type === "dish" || s.category === "dish";
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSuggestionClick(s)}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+                      >
+                        {isDish ? (
+                          <UtensilsCrossed className="w-4 h-4 text-amber-600 shrink-0" />
+                        ) : (
+                          <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                        )}
+                        <div>
+                          <div className="text-sm font-medium">{s.name}</div>
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {isDish ? "Dish · Tap to search" : `${(s.category || "").replace(/_/g, " ")} · ${s.area || ""}, ${s.city || ""}`}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            <button
+              onClick={handleNearMe}
+              disabled={locationLoading}
+              className={`h-11 px-4 border rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${nearMeActive ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-muted/50"}`}
+            >
+              {locationLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Navigation className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">{nearMeActive ? "Near Me" : "Near Me"}</span>
+            </button>
 
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -327,6 +399,20 @@ export default function SearchPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {locationError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
+            <X className="w-4 h-4 shrink-0" />
+            {locationError}
+          </div>
+        )}
+
+        {nearMeActive && userCoords && (
+          <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm text-primary flex items-center gap-2">
+            <Navigation className="w-4 h-4 shrink-0" />
+            Showing results sorted by distance from your location
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-muted-foreground">
             {isLoading ? "Searching..." : `${data?.total || 0} places found`}
@@ -352,8 +438,16 @@ export default function SearchPage() {
           </div>
         ) : data?.listings && data.listings.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {data.listings.map(listing => (
-              <ListingCard key={listing.id} listing={listing} />
+            {data.listings.map((listing: any) => (
+              <div key={listing.id} className="relative">
+                <ListingCard listing={listing} />
+                {nearMeActive && listing.distance != null && (
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-xs font-medium px-2 py-1 rounded-md shadow-sm text-primary flex items-center gap-1 z-10">
+                    <Navigation className="w-3 h-3" />
+                    {listing.distance < 1 ? `${Math.round(listing.distance * 1000)}m` : `${listing.distance} km`}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         ) : (

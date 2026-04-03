@@ -6,13 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface User {
-  id: string;
-  name: string;
+export interface InitializeSubscriptionBody {
+  vendorId: string;
+  packageSlug: string;
+  amount: number;
   email: string;
-  phone: string;
-  city: string;
-  role?: string;
-  avatarUrl?: string | null;
-  createdAt: string;
+  /** @nullable */
+  callbackUrl?: string | null;
 }

@@ -42,6 +42,7 @@ export const LoginUserResponse = zod.object({
     phone: zod.string(),
     city: zod.string(),
     role: zod.string().optional(),
+    avatarUrl: zod.string().nullish(),
     createdAt: zod.string(),
   }),
 });
@@ -56,6 +57,7 @@ export const GetCurrentUserResponse = zod.object({
   phone: zod.string(),
   city: zod.string(),
   role: zod.string().optional(),
+  avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -66,6 +68,7 @@ export const UpdateUserProfileBody = zod.object({
   name: zod.string().optional(),
   phone: zod.string().optional(),
   city: zod.string().optional(),
+  avatarUrl: zod.string().nullish(),
 });
 
 export const UpdateUserProfileResponse = zod.object({
@@ -75,6 +78,7 @@ export const UpdateUserProfileResponse = zod.object({
   phone: zod.string(),
   city: zod.string(),
   role: zod.string().optional(),
+  avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 
@@ -141,6 +145,7 @@ export const LoginAdminResponse = zod.object({
     phone: zod.string(),
     city: zod.string(),
     role: zod.string().optional(),
+    avatarUrl: zod.string().nullish(),
     createdAt: zod.string(),
   }),
 });
@@ -848,6 +853,7 @@ export const CreateOrderBody = zod.object({
   orderType: zod.enum(["delivery", "pickup", "dine_in"]),
   deliveryAddress: zod.string().nullish(),
   note: zod.string().nullish(),
+  totalAmount: zod.number().nullish(),
 });
 
 /**
@@ -868,6 +874,10 @@ export const GetMyOrdersResponseItem = zod.object({
   orderType: zod.string(),
   deliveryAddress: zod.string().nullish(),
   note: zod.string().nullish(),
+  totalAmount: zod.number().nullish(),
+  paymentStatus: zod.string(),
+  paymentReference: zod.string().nullish(),
+  paymentChannel: zod.string().nullish(),
   status: zod.string(),
   listingName: zod.string().nullish(),
   userName: zod.string().nullish(),
@@ -875,6 +885,82 @@ export const GetMyOrdersResponseItem = zod.object({
   createdAt: zod.string(),
 });
 export const GetMyOrdersResponse = zod.array(GetMyOrdersResponseItem);
+
+/**
+ * @summary Initialize a Paystack payment
+ */
+export const InitializePaymentBody = zod.object({
+  amount: zod.number(),
+  email: zod.string(),
+  paymentType: zod.enum(["order", "subscription"]),
+  orderId: zod.string().nullish(),
+  subscriptionId: zod.string().nullish(),
+  callbackUrl: zod.string().nullish(),
+  metadata: zod.object({}).passthrough().optional(),
+});
+
+export const InitializePaymentResponse = zod.object({
+  authorization_url: zod.string(),
+  access_code: zod.string(),
+  reference: zod.string(),
+});
+
+/**
+ * @summary Initialize a subscription payment
+ */
+export const InitializeSubscriptionPaymentBody = zod.object({
+  vendorId: zod.string(),
+  packageSlug: zod.string(),
+  amount: zod.number(),
+  email: zod.string(),
+  callbackUrl: zod.string().nullish(),
+});
+
+export const InitializeSubscriptionPaymentResponse = zod.object({
+  authorization_url: zod.string(),
+  access_code: zod.string(),
+  reference: zod.string(),
+});
+
+/**
+ * @summary Verify a payment
+ */
+export const VerifyPaymentParams = zod.object({
+  reference: zod.coerce.string(),
+});
+
+export const VerifyPaymentResponse = zod.object({
+  reference: zod.string(),
+  status: zod.string(),
+  amount: zod.number(),
+  currency: zod.string(),
+  channel: zod.string().nullish(),
+  paidAt: zod.string().nullish(),
+  paymentType: zod.string().nullish(),
+});
+
+/**
+ * @summary Get current user payment history
+ */
+export const GetMyPaymentsResponseItem = zod.object({
+  id: zod.string(),
+  reference: zod.string(),
+  provider: zod.string(),
+  amount: zod.number(),
+  currency: zod.string(),
+  status: zod.string(),
+  paymentType: zod.string(),
+  orderId: zod.string().nullish(),
+  subscriptionId: zod.string().nullish(),
+  userId: zod.string().nullish(),
+  vendorId: zod.string().nullish(),
+  email: zod.string(),
+  channel: zod.string().nullish(),
+  metadata: zod.string().nullish(),
+  paidAt: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const GetMyPaymentsResponse = zod.array(GetMyPaymentsResponseItem);
 
 /**
  * @summary Get saved places
@@ -1288,6 +1374,10 @@ export const GetVendorOrdersResponseItem = zod.object({
   orderType: zod.string(),
   deliveryAddress: zod.string().nullish(),
   note: zod.string().nullish(),
+  totalAmount: zod.number().nullish(),
+  paymentStatus: zod.string(),
+  paymentReference: zod.string().nullish(),
+  paymentChannel: zod.string().nullish(),
   status: zod.string(),
   listingName: zod.string().nullish(),
   userName: zod.string().nullish(),
@@ -1322,6 +1412,10 @@ export const UpdateOrderStatusResponse = zod.object({
   orderType: zod.string(),
   deliveryAddress: zod.string().nullish(),
   note: zod.string().nullish(),
+  totalAmount: zod.number().nullish(),
+  paymentStatus: zod.string(),
+  paymentReference: zod.string().nullish(),
+  paymentChannel: zod.string().nullish(),
   status: zod.string(),
   listingName: zod.string().nullish(),
   userName: zod.string().nullish(),
@@ -1578,6 +1672,7 @@ export const GetAdminUsersResponseItem = zod.object({
   phone: zod.string(),
   city: zod.string(),
   role: zod.string().optional(),
+  avatarUrl: zod.string().nullish(),
   createdAt: zod.string(),
 });
 export const GetAdminUsersResponse = zod.array(GetAdminUsersResponseItem);

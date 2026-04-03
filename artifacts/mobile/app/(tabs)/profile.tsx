@@ -1,21 +1,86 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Alert, Image, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
 
 export default function ProfileScreen() {
   const colors = useColors();
-  const { isAuthenticated, user, vendor, mode, logout } = useAuth();
+  const { isAuthenticated, user, vendor, mode, logout, updateUser, token } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
+  const [uploading, setUploading] = useState(false);
 
   const handleLogout = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await logout();
+  };
+
+  const apiBase = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+  const handleAvatarPick = async () => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow photo access to set your avatar.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]) return;
+
+    const asset = result.assets[0];
+    setUploading(true);
+
+    try {
+      const ext = asset.uri.split(".").pop() || "jpg";
+      const contentType = `image/${ext === "png" ? "png" : "jpeg"}`;
+      const fileName = `avatar-${Date.now()}.${ext}`;
+
+      const blob = await fetch(asset.uri).then(r => r.blob());
+      const fileSize = blob.size || 1;
+
+      const uploadRes = await fetch(`${apiBase}/api/storage/uploads/request-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: fileName, size: fileSize, contentType }),
+      });
+      if (!uploadRes.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await uploadRes.json();
+
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: blob,
+      });
+      if (!putRes.ok) throw new Error("Upload failed");
+
+      const avatarUrl = `${apiBase}/api/storage/objects/${objectPath.replace(/^\/objects\//, "")}`;
+
+      const updateRes = await fetch(`${apiBase}/api/auth/me/update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatarUrl }),
+      });
+      if (!updateRes.ok) throw new Error("Failed to save avatar");
+
+      updateUser({ avatarUrl });
+    } catch (e: any) {
+      Alert.alert("Upload failed", e.message || "Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const MenuItem = ({ icon, label, onPress, color, isLast }: { icon: string; label: string; onPress: () => void; color?: string; isLast?: boolean }) => (
@@ -32,11 +97,26 @@ export default function ProfileScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 20 : 20, paddingBottom: isWeb ? 34 : 100 }}>
       {isAuthenticated && user ? (
         <View style={[styles.userCard, { backgroundColor: colors.card }]}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.avatarText, { color: "#fff", fontFamily: "Inter_700Bold" }]}>
-              {user.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <Pressable onPress={handleAvatarPick} style={styles.avatarWrap}>
+            {user.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={[styles.avatar, { backgroundColor: colors.muted }]} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.avatarText, { color: "#fff", fontFamily: "Inter_700Bold" }]}>
+                  {user.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            {uploading ? (
+              <View style={[styles.avatarBadge, { backgroundColor: colors.card, borderColor: colors.card }]}>
+                <ActivityIndicator size={10} color={colors.primary} />
+              </View>
+            ) : (
+              <View style={[styles.avatarBadge, { backgroundColor: colors.primary, borderColor: colors.card }]}>
+                <Feather name="camera" size={10} color="#fff" />
+              </View>
+            )}
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={[styles.userName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{user.name}</Text>
             <Text style={[styles.userEmail, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{user.email}</Text>
@@ -82,14 +162,12 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <View style={[styles.section, { backgroundColor: colors.card }]}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Admin</Text>
-        {mode === "admin" && isAuthenticated ? (
+      {mode === "admin" && isAuthenticated && (
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground, fontFamily: "Inter_600SemiBold" }]}>Admin</Text>
           <MenuItem icon="shield" label="Admin Dashboard" onPress={() => router.push("/admin/dashboard")} isLast />
-        ) : (
-          <MenuItem icon="shield" label="Admin Login" onPress={() => router.push("/admin/login")} isLast />
-        )}
-      </View>
+        </View>
+      )}
 
       {isAuthenticated && (
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -115,8 +193,20 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 2,
   },
-  avatar: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  avatarWrap: { position: "relative" },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarText: { fontSize: 18 },
+  avatarBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+  },
   userName: { fontSize: 17, letterSpacing: -0.3 },
   userEmail: { fontSize: 13, marginTop: 2 },
   section: {

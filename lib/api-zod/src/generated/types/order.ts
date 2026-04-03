@@ -17,6 +17,13 @@ export interface Order {
   deliveryAddress?: string | null;
   /** @nullable */
   note?: string | null;
+  /** @nullable */
+  totalAmount?: number | null;
+  paymentStatus: string;
+  /** @nullable */
+  paymentReference?: string | null;
+  /** @nullable */
+  paymentChannel?: string | null;
   status: string;
   /** @nullable */
   listingName?: string | null;

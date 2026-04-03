@@ -197,6 +197,18 @@ export default function HomeScreen() {
             Search restaurants, dishes, cuisines...
           </Text>
         </Pressable>
+        <Pressable
+          onPress={() => router.push({ pathname: "/search", params: { nearme: "1" } })}
+          style={({ pressed }) => [styles.nearMeBtn, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <View style={styles.nearMeIconWrap}>
+            <Feather name="navigation" size={15} color="#fff" />
+          </View>
+          <Text style={[styles.nearMeBtnText, { fontFamily: "Inter_600SemiBold" }]}>
+            Find food near me
+          </Text>
+          <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.7)" />
+        </Pressable>
       </LinearGradient>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
@@ -216,8 +228,6 @@ export default function HomeScreen() {
           </Pressable>
         ))}
       </ScrollView>
-
-      <QuickStatBanner />
 
       {loading && (
         <View style={styles.loadingWrap}>
@@ -430,6 +440,8 @@ export default function HomeScreen() {
         </View>
       )}
 
+      <QuickStatBanner />
+
       {partners && partners.length > 0 && (
         <View style={[styles.section, styles.partnersSection, { borderTopColor: colors.border }]}>
           <View style={styles.partnersTitleWrap}>
@@ -484,6 +496,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchPlaceholder: { fontSize: 14, color: "#999" },
+  nearMeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.13)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    marginTop: 10,
+  },
+  nearMeIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nearMeBtnText: { flex: 1, fontSize: 14, color: "#fff" },
 
   categoryRow: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, gap: 10 },
   categoryChip: {

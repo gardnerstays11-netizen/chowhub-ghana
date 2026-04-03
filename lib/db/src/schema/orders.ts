@@ -1,4 +1,4 @@
-import { pgTable, text, uuid, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, timestamp, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { listingsTable } from "./listings";
@@ -12,6 +12,10 @@ export const ordersTable = pgTable("orders", {
   orderType: text("order_type").notNull(),
   deliveryAddress: text("delivery_address"),
   note: text("note"),
+  totalAmount: real("total_amount"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  paymentReference: text("payment_reference"),
+  paymentChannel: text("payment_channel"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -14,7 +14,7 @@ export default function AdminSettings() {
   const { isAdminAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"general" | "seo" | "analytics" | "social">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "seo" | "analytics" | "social" | "onboarding" | "splash">("general");
   const [form, setForm] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
 
@@ -75,6 +75,8 @@ export default function AdminSettings() {
   const tabs = [
     { key: "general" as const, label: "General", icon: "🏠" },
     { key: "seo" as const, label: "SEO & Meta", icon: "🔍" },
+    { key: "onboarding" as const, label: "Onboarding", icon: "📱" },
+    { key: "splash" as const, label: "Splash & App", icon: "🚀" },
     { key: "analytics" as const, label: "Analytics", icon: "📊" },
     { key: "social" as const, label: "Social & Contact", icon: "🌐" },
   ];
@@ -257,6 +259,179 @@ export default function AdminSettings() {
                       placeholder={"<!-- Custom scripts, structured data, etc. -->\n<script>...</script>"}
                     />
                     <p className="text-xs text-zinc-400 mt-1">Injected into the &lt;head&gt; of every page. Use for schema markup, custom fonts, etc.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "onboarding" && (
+            <div className="space-y-6 max-w-2xl">
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">Onboarding Step 1</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Title</label>
+                    <Input value={form.onboarding_step1_title || ""} onChange={e => updateField("onboarding_step1_title", e.target.value)} placeholder="Discover Ghana's Best Eats" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Subtitle</label>
+                    <textarea className="w-full min-h-[60px] border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1" value={form.onboarding_step1_subtitle || ""} onChange={e => updateField("onboarding_step1_subtitle", e.target.value)} placeholder="From sizzling street food to fine dining..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-2 block">Image</label>
+                    <div className="flex items-center gap-4">
+                      {form.onboarding_step1_image ? (
+                        <img src={form.onboarding_step1_image} alt="Step 1" className="h-20 object-cover border rounded-md" />
+                      ) : (
+                        <div className="h-20 w-28 border-2 border-dashed border-zinc-200 rounded-md flex items-center justify-center"><span className="text-xs text-zinc-400">No image</span></div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(e, "onboarding_step1_image")} />
+                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-md text-sm font-medium text-zinc-700 transition-colors"><Upload className="w-4 h-4" /> Upload</span>
+                      </label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">Onboarding Step 2</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Title</label>
+                    <Input value={form.onboarding_step2_title || ""} onChange={e => updateField("onboarding_step2_title", e.target.value)} placeholder="Find Places Near You" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Subtitle</label>
+                    <textarea className="w-full min-h-[60px] border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1" value={form.onboarding_step2_subtitle || ""} onChange={e => updateField("onboarding_step2_subtitle", e.target.value)} placeholder="Use your location to discover what's cooking nearby..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-2 block">Image</label>
+                    <div className="flex items-center gap-4">
+                      {form.onboarding_step2_image ? (
+                        <img src={form.onboarding_step2_image} alt="Step 2" className="h-20 object-cover border rounded-md" />
+                      ) : (
+                        <div className="h-20 w-28 border-2 border-dashed border-zinc-200 rounded-md flex items-center justify-center"><span className="text-xs text-zinc-400">No image</span></div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(e, "onboarding_step2_image")} />
+                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-md text-sm font-medium text-zinc-700 transition-colors"><Upload className="w-4 h-4" /> Upload</span>
+                      </label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">Onboarding Step 3</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Title</label>
+                    <Input value={form.onboarding_step3_title || ""} onChange={e => updateField("onboarding_step3_title", e.target.value)} placeholder="Join the Food Community" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Subtitle</label>
+                    <textarea className="w-full min-h-[60px] border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1" value={form.onboarding_step3_subtitle || ""} onChange={e => updateField("onboarding_step3_subtitle", e.target.value)} placeholder="Save your favourites, leave reviews..." />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-2 block">Image</label>
+                    <div className="flex items-center gap-4">
+                      {form.onboarding_step3_image ? (
+                        <img src={form.onboarding_step3_image} alt="Step 3" className="h-20 object-cover border rounded-md" />
+                      ) : (
+                        <div className="h-20 w-28 border-2 border-dashed border-zinc-200 rounded-md flex items-center justify-center"><span className="text-xs text-zinc-400">No image</span></div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(e, "onboarding_step3_image")} />
+                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-md text-sm font-medium text-zinc-700 transition-colors"><Upload className="w-4 h-4" /> Upload</span>
+                      </label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">Notification Prompt</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Enable Button Text</label>
+                    <Input value={form.onboarding_notif_btn_text || ""} onChange={e => updateField("onboarding_notif_btn_text", e.target.value)} placeholder="Enable Notifications" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Skip Button Text</label>
+                    <Input value={form.onboarding_notif_skip_text || ""} onChange={e => updateField("onboarding_notif_skip_text", e.target.value)} placeholder="Maybe Later" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "splash" && (
+            <div className="space-y-6 max-w-2xl">
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">Splash Screen</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-2 block">Splash Image</label>
+                    <div className="flex items-center gap-4">
+                      {form.splash_image_url ? (
+                        <img src={form.splash_image_url} alt="Splash" className="h-24 object-contain border rounded-md" />
+                      ) : (
+                        <div className="h-24 w-24 border-2 border-dashed border-zinc-200 rounded-md flex items-center justify-center"><span className="text-xs text-zinc-400">No image</span></div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(e, "splash_image_url")} />
+                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-md text-sm font-medium text-zinc-700 transition-colors"><Upload className="w-4 h-4" /> Upload Splash</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Recommended: 1284x2778px (PNG). Shown while the app loads.</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">Splash Background Color</label>
+                    <div className="flex items-center gap-3">
+                      <input type="color" value={form.splash_bg_color || "#f8f6f2"} onChange={e => updateField("splash_bg_color", e.target.value)} className="h-9 w-14 rounded border border-zinc-200 cursor-pointer" />
+                      <Input value={form.splash_bg_color || ""} onChange={e => updateField("splash_bg_color", e.target.value)} placeholder="#f8f6f2" className="max-w-[140px]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">App Icon</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-2 block">App Icon</label>
+                    <div className="flex items-center gap-4">
+                      {form.app_icon_url ? (
+                        <img src={form.app_icon_url} alt="App Icon" className="h-16 w-16 object-contain border rounded-xl" />
+                      ) : (
+                        <div className="h-16 w-16 border-2 border-dashed border-zinc-200 rounded-xl flex items-center justify-center"><span className="text-xs text-zinc-400">Icon</span></div>
+                      )}
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleLogoUpload(e, "app_icon_url")} />
+                        <span className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-md text-sm font-medium text-zinc-700 transition-colors"><Upload className="w-4 h-4" /> Upload Icon</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1">Recommended: 1024x1024px (PNG). Used as the app icon on home screen.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <h3 className="text-lg font-semibold text-zinc-900">App Store Details</h3>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">App Name</label>
+                    <Input value={form.app_name || ""} onChange={e => updateField("app_name", e.target.value)} placeholder="ChowHub" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">App Subtitle</label>
+                    <Input value={form.app_subtitle || ""} onChange={e => updateField("app_subtitle", e.target.value)} placeholder="Discover Great Food in Ghana" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-zinc-700 mb-1 block">App Store Description</label>
+                    <textarea className="w-full min-h-[100px] border border-zinc-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-1" value={form.app_store_description || ""} onChange={e => updateField("app_store_description", e.target.value)} placeholder="Find the best restaurants, chop bars, and street food across Ghana..." />
                   </div>
                 </CardContent>
               </Card>

@@ -19,6 +19,7 @@ tags:
   - name: reservations
     description: Reservations
   - name: orders
+  - name: payments
     description: Orders
   - name: reviews
     description: Reviews
@@ -833,6 +834,79 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Order"
+
+  # ── Payments ──
+  /payments/initialize:
+    post:
+      operationId: initializePayment
+      tags: [payments]
+      summary: Initialize a Paystack payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitializePaymentBody"
+      responses:
+        "200":
+          description: Payment initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentInitResponse"
+
+  /payments/initialize-subscription:
+    post:
+      operationId: initializeSubscriptionPayment
+      tags: [payments]
+      summary: Initialize a subscription payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitializeSubscriptionBody"
+      responses:
+        "200":
+          description: Subscription payment initialized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentInitResponse"
+
+  /payments/verify/{reference}:
+    get:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify a payment
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerifyResponse"
+
+  /payments/mine:
+    get:
+      operationId: getMyPayments
+      tags: [payments]
+      summary: Get current user payment history
+      responses:
+        "200":
+          description: User payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
 
   # ── Saved Places ──
   /saved:
@@ -1663,6 +1737,9 @@ components:
           type: string
         city:
           type: string
+        avatarUrl:
+          type: string
+          nullable: true
 
     AuthResponse:
       type: object
@@ -1697,6 +1774,9 @@ components:
           type: string
         role:
           type: string
+        avatarUrl:
+          type: string
+          nullable: true
         createdAt:
           type: string
       required: [id, name, email, phone, city, createdAt]
@@ -2198,6 +2278,14 @@ components:
           type: ["string", "null"]
         note:
           type: ["string", "null"]
+        totalAmount:
+          type: ["number", "null"]
+        paymentStatus:
+          type: string
+        paymentReference:
+          type: ["string", "null"]
+        paymentChannel:
+          type: ["string", "null"]
         status:
           type: string
         listingName:
@@ -2208,7 +2296,7 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
-      required: [id, listingId, userId, items, orderType, status, createdAt]
+      required: [id, listingId, userId, items, orderType, status, paymentStatus, createdAt]
 
     OrderItem:
       type: object
@@ -2239,6 +2327,8 @@ components:
           type: ["string", "null"]
         note:
           type: ["string", "null"]
+        totalAmount:
+          type: ["number", "null"]
       required: [listingId, items, orderType]
 
     UpdateOrderStatusBody:
@@ -2784,3 +2874,106 @@ components:
           type: string
         secondary_color:
           type: string
+
+    # ── Payment ──
+    InitializePaymentBody:
+      type: object
+      properties:
+        amount:
+          type: number
+        email:
+          type: string
+        paymentType:
+          type: string
+          enum: [order, subscription]
+        orderId:
+          type: ["string", "null"]
+        subscriptionId:
+          type: ["string", "null"]
+        callbackUrl:
+          type: ["string", "null"]
+        metadata:
+          type: object
+      required: [amount, email, paymentType]
+
+    InitializeSubscriptionBody:
+      type: object
+      properties:
+        vendorId:
+          type: string
+        packageSlug:
+          type: string
+        amount:
+          type: number
+        email:
+          type: string
+        callbackUrl:
+          type: ["string", "null"]
+      required: [vendorId, packageSlug, amount, email]
+
+    PaymentInitResponse:
+      type: object
+      properties:
+        authorization_url:
+          type: string
+        access_code:
+          type: string
+        reference:
+          type: string
+      required: [authorization_url, access_code, reference]
+
+    PaymentVerifyResponse:
+      type: object
+      properties:
+        reference:
+          type: string
+        status:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        channel:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        paymentType:
+          type: ["string", "null"]
+      required: [reference, status, amount, currency]
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        reference:
+          type: string
+        provider:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+        paymentType:
+          type: string
+        orderId:
+          type: ["string", "null"]
+        subscriptionId:
+          type: ["string", "null"]
+        userId:
+          type: ["string", "null"]
+        vendorId:
+          type: ["string", "null"]
+        email:
+          type: string
+        channel:
+          type: ["string", "null"]
+        metadata:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, reference, provider, amount, currency, status, paymentType, email, createdAt]

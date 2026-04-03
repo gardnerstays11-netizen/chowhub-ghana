@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ListingCard } from "@/components/listing-card";
-import { Star } from "lucide-react";
+import { Star, Camera, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Dashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token, updateUser } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
@@ -24,6 +24,46 @@ export default function Dashboard() {
   const { data: orders } = useGetMyOrders({ query: { enabled: isAuthenticated } });
   const { data: savedPlaces } = useGetSavedPlaces({ query: { enabled: isAuthenticated } });
   const { data: reviews } = useGetMyReviews({ query: { enabled: isAuthenticated } });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    setUploading(true);
+    try {
+      const res = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!res.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await res.json();
+
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload failed");
+
+      const avatarUrl = `/api/storage/objects/${objectPath.replace(/^\/objects\//, "")}`;
+
+      const updateRes = await fetch("/api/auth/me/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatarUrl }),
+      });
+      if (!updateRes.ok) throw new Error("Failed to save avatar");
+
+      updateUser({ avatarUrl });
+    } catch {
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   if (!isAuthenticated || !user) return null;
 
@@ -156,22 +196,54 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Profile Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
-                  <p className="text-lg font-medium">{user.name}</p>
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative group shrink-0"
+                    disabled={uploading}
+                  >
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-20 h-20 rounded-full object-cover border-2 border-border"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-2xl font-bold text-primary-foreground">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      {uploading ? (
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      ) : (
+                        <Camera className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  <div>
+                    <p className="font-bold text-lg">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Email</label>
-                  <p className="text-lg font-medium">{user.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                  <p className="text-lg font-medium">{user.phone}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">City</label>
-                  <p className="text-lg font-medium">{user.city}</p>
+                <div className="grid gap-4 pt-2">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                    <p className="text-lg font-medium">{user.phone}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">City</label>
+                    <p className="text-lg font-medium">{user.city}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

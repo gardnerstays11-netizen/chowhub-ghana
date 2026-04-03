@@ -29,6 +29,12 @@ router.put("/admin/site-settings", async (req, res): Promise<void> => {
     "contact_email", "contact_phone",
     "footer_text", "custom_head_scripts",
     "primary_color", "secondary_color",
+    "onboarding_step1_title", "onboarding_step1_subtitle", "onboarding_step1_image",
+    "onboarding_step2_title", "onboarding_step2_subtitle", "onboarding_step2_image",
+    "onboarding_step3_title", "onboarding_step3_subtitle", "onboarding_step3_image",
+    "onboarding_notif_btn_text", "onboarding_notif_skip_text",
+    "splash_image_url", "splash_bg_color",
+    "app_icon_url", "app_name", "app_subtitle", "app_store_description",
   ];
 
   const entries = Object.entries(updates).filter(([key]) => allowedKeys.includes(key));

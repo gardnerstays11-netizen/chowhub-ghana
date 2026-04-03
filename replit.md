@@ -33,7 +33,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `lib/db` — Drizzle ORM schema and database connection
 
 ### Database Schema (PostgreSQL)
-- `users` — User accounts (role: user/admin)
+- `users` — User accounts (role: user/admin, avatarUrl: optional profile photo)
 - `vendors` — Vendor accounts (status: pending/approved/rejected, plan: free/premium)
 - `listings` — Restaurant/food spot listings
 - `listing_photos` — Listing photos
@@ -99,7 +99,7 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 ## Frontend Pages
 
 - `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings, "Meet Our Partners" section)
-- `/search` — Advanced search/browse with autocomplete, filters (cuisine type, price range, dining style, occasion, reservations/orders), sort (highest rated, most reviewed, newest, featured, price), search logging
+- `/search` — Advanced search/browse with autocomplete (returns both restaurant and dish/menu item suggestions), filters (cuisine type, price range, dining style, occasion, reservations/orders), "Near Me" geolocation button (sorts by distance), sort (nearest, highest rated, most reviewed, newest, featured, price), search logging. Search queries now also match menu item names (e.g. searching "pizza" or "fried rice" finds restaurants that serve those dishes)
 - `/listings/:slug` — Listing detail (description, menu grouped by category, hours, Call Now, WhatsApp, Get Directions via Google Maps)
 - `/login`, `/register` — User auth
 - `/dashboard` — User dashboard (reservations, orders, saved, reviews)
@@ -114,18 +114,20 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/admin/login` — Admin login
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation) — uses shared AdminLayout
 - `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage) — uses shared AdminLayout
-- `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links) — uses shared AdminLayout
+- `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Onboarding: step 1-3 titles/subtitles/images + notification prompt text, Splash & App: splash image/bg color/app icon/app store details, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links) — uses shared AdminLayout
 - `/admin/categories` — Category management (add, edit, delete, toggle active, reorder) — uses shared AdminLayout
 - `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits) — uses shared AdminLayout
 - `/admin/editors-picks` — Editor's Picks management (create, edit, delete, toggle active, reorder curated collections) — uses shared AdminLayout
 
 ## Mobile App (Expo)
 
-- **Tabs**: Home (Discover feed: stat banner, categories, nearby, featured picks, top rated, popular joints, trending spots, quick bites, cafes & bakeries, upcoming events, recently added, partners), Search (autocomplete, category chips, sort filters, recent searches, search logging), Saved, Profile
+- **Onboarding**: 3-step swipeable onboarding flow with AI-generated images (Discover, Nearby, Community), stored completion in AsyncStorage, notification permission prompt on final step
+- **Push Notifications**: `expo-notifications` setup in `lib/notifications.ts` — handles permission request, Expo push token registration, Android channel config, notification handler
+- **Tabs**: Home (Discover feed: stat banner, categories, nearby, featured picks, top rated, popular joints, trending spots, quick bites, cafes & bakeries, upcoming events, recently added, partners, "Find food near me" button in hero), Search (autocomplete with dish suggestions, category chips, occasion chips, sort filters, recent searches, search logging, Near Me geolocation button, supports nearme param for auto-trigger), Places (find & reserve venues — filters for reservable listings by category: fine dining, restaurants, bars & lounges, cafés, seafood; search bar, featured "Top Picks" horizontal carousel, compact list for all places), Saved, Profile (avatar upload via expo-image-picker + object storage, admin section hidden for non-admins)
 - **Vendor Dashboard**: Enhanced with view counts (total + unique), orders (total, today, weekly, monthly), reservations, rating/reviews, daily views/orders mini-charts, performance overview, quick-action links to Menu & Events management
 - **Vendor Menu Management** (`vendor/menu`): Full CRUD for menu items (name, description, price, category, availability toggle, popular badge), grouped by category
 - **Vendor Event Management** (`vendor/events`): Full CRUD for events (title, description, dates, category, image URL), past/upcoming visual distinction
-- **Listing Detail Quick Order** (`listing/[slug]`): "Add to Order" buttons on menu items, inline quantity controls, floating cart bar (count + total), checkout modal sheet (pickup/delivery, delivery address, note, place order)
+- **Listing Detail Quick Order** (`listing/[slug]`): "Add to Order" buttons on menu items, inline quantity controls, floating cart bar (count + total), checkout modal sheet (pickup/delivery, delivery address, note, place order), WhatsApp order routing (opens WhatsApp with formatted order details after placing order)
 - **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard/menu/events), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
 - **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`

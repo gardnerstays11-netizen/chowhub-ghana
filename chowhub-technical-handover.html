@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ChowHub Ghana - Technical Handover Document</title>
+<style>
+  @page { margin: 40px 50px; size: A4; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #222; line-height: 1.6; font-size: 13px; }
+  .cover { text-align: center; padding: 120px 40px 80px; page-break-after: always; }
+  .cover h1 { font-size: 36px; color: #24503a; margin: 0; letter-spacing: -1px; }
+  .cover .subtitle { font-size: 18px; color: #c98a15; margin-top: 8px; }
+  .cover .meta { margin-top: 60px; color: #666; font-size: 14px; }
+  .cover .meta p { margin: 4px 0; }
+  h1 { color: #24503a; font-size: 22px; border-bottom: 2px solid #24503a; padding-bottom: 6px; margin-top: 36px; }
+  h2 { color: #24503a; font-size: 17px; margin-top: 24px; }
+  h3 { color: #333; font-size: 14px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  th { background: #24503a; color: #fff; padding: 8px 10px; text-align: left; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e5e5e5; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  code { background: #f1f1f1; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: 'Fira Code', monospace; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .section { page-break-inside: avoid; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  .toc a { color: #24503a; text-decoration: none; }
+  .toc li { margin-bottom: 6px; }
+  .note { background: #fef3c7; border-left: 4px solid #c98a15; padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>ChowHub Ghana</h1>
+  <div class="subtitle">Technical Handover Document</div>
+  <p style="color:#888;font-size:14px;margin-top:12px;">Full-Stack Food & Dining Discovery Platform</p>
+  <div class="meta">
+    <p><strong>Version:</strong> 1.0.0</p>
+    <p><strong>Date:</strong> April 3, 2026</p>
+    <p><strong>Platform:</strong> Web + Mobile (iOS & Android)</p>
+    <p><strong>Market:</strong> Ghana</p>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<h1>Table of Contents</h1>
+<ol class="toc">
+  <li><a href="#overview">Project Overview</a></li>
+  <li><a href="#architecture">System Architecture</a></li>
+  <li><a href="#tech-stack">Technology Stack</a></li>
+  <li><a href="#project-structure">Project Structure</a></li>
+  <li><a href="#database">Database Schema</a></li>
+  <li><a href="#api">API Endpoints</a></li>
+  <li><a href="#auth">Authentication & Authorization</a></li>
+  <li><a href="#payments">Payment Integration (Paystack)</a></li>
+  <li><a href="#web-app">Web Application</a></li>
+  <li><a href="#mobile-app">Mobile Application (Expo)</a></li>
+  <li><a href="#admin">Admin Portal</a></li>
+  <li><a href="#vendor">Vendor Portal</a></li>
+  <li><a href="#seo">SEO Strategy</a></li>
+  <li><a href="#deployment">Deployment & DevOps</a></li>
+  <li><a href="#env-vars">Environment Variables</a></li>
+  <li><a href="#seed-data">Seed Data & Test Accounts</a></li>
+  <li><a href="#known-issues">Known Issues & Future Work</a></li>
+</ol>
+
+<!-- 1. PROJECT OVERVIEW -->
+<h1 id="overview">1. Project Overview</h1>
+<p>ChowHub Ghana is a full-stack food and dining discovery platform built for the Ghanaian market. It enables users to discover restaurants, bars, cafes, and street food vendors across Ghana, place orders (via WhatsApp or online payment), make reservations, and leave reviews.</p>
+
+<h2>Key Features</h2>
+<ul>
+  <li><strong>Location-based discovery</strong> — Find restaurants, bars, lounges near you with GPS-based "Near Me" functionality</li>
+  <li><strong>Advanced food search</strong> — Search by dish name across all restaurant menus, with category and occasion filters</li>
+  <li><strong>Dual ordering</strong> — Place orders via WhatsApp or pay online via Paystack (Mobile Money, cards)</li>
+  <li><strong>Table reservations</strong> — Book tables at restaurants that accept reservations</li>
+  <li><strong>Vendor portal</strong> — Restaurant owners manage menus, events, photos, analytics, and respond to orders</li>
+  <li><strong>Admin portal</strong> — Full site management: categories, subscriptions, editor's picks, site settings, SEO</li>
+  <li><strong>Mobile app</strong> — Native Expo app with onboarding, push notifications, and full feature parity</li>
+  <li><strong>SEO optimized</strong> — Dynamic sitemap, JSON-LD, OpenGraph, per-page meta tags</li>
+</ul>
+
+<h2>User Roles</h2>
+<table>
+  <tr><th>Role</th><th>Description</th><th>Capabilities</th></tr>
+  <tr><td>User</td><td>Regular customer</td><td>Browse, search, order, reserve, review, save favorites</td></tr>
+  <tr><td>Vendor</td><td>Restaurant/bar owner</td><td>Manage listing, menu, events, photos, view analytics, handle orders/reservations</td></tr>
+  <tr><td>Admin</td><td>Platform administrator</td><td>Manage all vendors, categories, subscriptions, site settings, editor's picks, partners</td></tr>
+</table>
+
+<!-- 2. ARCHITECTURE -->
+<h1 id="architecture">2. System Architecture</h1>
+<h2>High-Level Architecture</h2>
+<pre style="background:#f9f9f9;padding:16px;border-radius:8px;font-size:11px;">
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Web App       │     │  Mobile App      │     │  Admin Portal   │
+│  (React + Vite) │     │  (Expo/RN)       │     │  (React + Vite) │
+└────────┬────────┘     └────────┬─────────┘     └────────┬────────┘
+         │                       │                         │
+         └───────────────────────┼─────────────────────────┘
+                                 │
+                          ┌──────┴──────┐
+                          │  API Server │
+                          │  (Express)  │
+                          └──────┬──────┘
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+              ┌─────┴─────┐ ┌───┴───┐ ┌─────┴─────┐
+              │ PostgreSQL │ │Paystack│ │  Object   │
+              │  Database  │ │  API   │ │  Storage  │
+              └────────────┘ └───────┘ └───────────┘
+</pre>
+
+<h2>Monorepo Structure</h2>
+<p>The project uses a <strong>pnpm workspace monorepo</strong> with shared packages:</p>
+<pre style="background:#f9f9f9;padding:16px;border-radius:8px;font-size:11px;">
+workspace/
+├── artifacts/
+│   ├── api-server/        # Express API (port 8080)
+│   ├── chowdeck/          # React+Vite web app
+│   ├── mobile/            # Expo/React Native mobile app
+│   └── mockup-sandbox/    # Component preview server
+├── lib/
+│   ├── api-spec/          # OpenAPI specification + codegen
+│   ├── api-client-react/  # Generated React Query hooks
+│   ├── db/                # Drizzle ORM schemas + config
+│   └── zod/               # Generated Zod validators
+├── pnpm-workspace.yaml
+└── package.json
+</pre>
+
+<!-- 3. TECH STACK -->
+<h1 id="tech-stack">3. Technology Stack</h1>
+<table>
+  <tr><th>Layer</th><th>Technology</th><th>Version</th></tr>
+  <tr><td>Frontend (Web)</td><td>React + Vite + TypeScript</td><td>React 19, Vite 7</td></tr>
+  <tr><td>Frontend (Mobile)</td><td>Expo + React Native</td><td>Expo SDK 53</td></tr>
+  <tr><td>UI Components</td><td>shadcn/ui (web), Custom RN components</td><td>Latest</td></tr>
+  <tr><td>Backend</td><td>Express.js + TypeScript</td><td>Express 4</td></tr>
+  <tr><td>Database</td><td>PostgreSQL + Drizzle ORM</td><td>PG 16, Drizzle 0.38</td></tr>
+  <tr><td>API Spec</td><td>OpenAPI 3.1 + Orval codegen</td><td>Orval 8.5</td></tr>
+  <tr><td>Auth</td><td>JWT (jsonwebtoken + bcrypt)</td><td>Custom implementation</td></tr>
+  <tr><td>Payments</td><td>Paystack</td><td>REST API v2</td></tr>
+  <tr><td>Storage</td><td>Replit Object Storage</td><td>Built-in</td></tr>
+  <tr><td>State Management</td><td>TanStack React Query</td><td>v5</td></tr>
+  <tr><td>Routing (Web)</td><td>Wouter v3</td><td>3.x</td></tr>
+  <tr><td>Routing (Mobile)</td><td>Expo Router (file-based)</td><td>v4</td></tr>
+  <tr><td>Package Manager</td><td>pnpm</td><td>10.x</td></tr>
+</table>
+
+<!-- 4. PROJECT STRUCTURE -->
+<h1 id="project-structure">4. Project Structure</h1>
+<h2>API Server (<code>artifacts/api-server/</code>)</h2>
+<table>
+  <tr><th>File/Dir</th><th>Purpose</th></tr>
+  <tr><td><code>src/app.ts</code></td><td>Express app setup, middleware, CORS</td></tr>
+  <tr><td><code>src/index.ts</code></td><td>Server bootstrap</td></tr>
+  <tr><td><code>src/routes/index.ts</code></td><td>Route aggregator (all feature routes)</td></tr>
+  <tr><td><code>src/routes/auth.ts</code></td><td>User/vendor/admin authentication</td></tr>
+  <tr><td><code>src/routes/listings.ts</code></td><td>Listing CRUD + search + discovery</td></tr>
+  <tr><td><code>src/routes/orders.ts</code></td><td>Order creation + management</td></tr>
+  <tr><td><code>src/routes/payments.ts</code></td><td>Paystack payment integration</td></tr>
+  <tr><td><code>src/routes/reservations.ts</code></td><td>Table reservation management</td></tr>
+  <tr><td><code>src/routes/admin.ts</code></td><td>Admin operations</td></tr>
+  <tr><td><code>src/routes/vendor.ts</code></td><td>Vendor dashboard + management</td></tr>
+  <tr><td><code>src/lib/auth.ts</code></td><td>JWT middleware + helpers</td></tr>
+</table>
+
+<h2>Web App (<code>artifacts/chowdeck/</code>)</h2>
+<table>
+  <tr><th>File/Dir</th><th>Purpose</th></tr>
+  <tr><td><code>src/pages/home.tsx</code></td><td>Homepage with discovery sections</td></tr>
+  <tr><td><code>src/pages/search.tsx</code></td><td>Search with dish/food autocomplete</td></tr>
+  <tr><td><code>src/pages/listing-detail.tsx</code></td><td>Restaurant detail page</td></tr>
+  <tr><td><code>src/pages/dashboard.tsx</code></td><td>User dashboard</td></tr>
+  <tr><td><code>src/pages/vendor/*</code></td><td>Vendor portal pages</td></tr>
+  <tr><td><code>src/pages/admin/*</code></td><td>Admin portal pages</td></tr>
+  <tr><td><code>src/pages/payment-verify.tsx</code></td><td>Payment verification callback page</td></tr>
+  <tr><td><code>src/hooks/use-auth.tsx</code></td><td>Auth context + hooks</td></tr>
+  <tr><td><code>src/hooks/use-page-meta.ts</code></td><td>SEO meta tag management</td></tr>
+</table>
+
+<h2>Mobile App (<code>artifacts/mobile/</code>)</h2>
+<table>
+  <tr><th>File/Dir</th><th>Purpose</th></tr>
+  <tr><td><code>app/(tabs)/_layout.tsx</code></td><td>Tab bar layout (Home, Search, Places, Saved, Profile)</td></tr>
+  <tr><td><code>app/(tabs)/index.tsx</code></td><td>Home/Discover screen</td></tr>
+  <tr><td><code>app/(tabs)/search.tsx</code></td><td>Search with dish autocomplete</td></tr>
+  <tr><td><code>app/(tabs)/places.tsx</code></td><td>Find & reserve venues</td></tr>
+  <tr><td><code>app/(tabs)/saved.tsx</code></td><td>Saved/bookmarked places</td></tr>
+  <tr><td><code>app/(tabs)/profile.tsx</code></td><td>User profile with avatar upload</td></tr>
+  <tr><td><code>app/listing/[slug].tsx</code></td><td>Listing detail + ordering + Paystack payment</td></tr>
+  <tr><td><code>contexts/AuthContext.tsx</code></td><td>Auth state + JWT management</td></tr>
+  <tr><td><code>lib/notifications.ts</code></td><td>Push notification setup</td></tr>
+</table>
+
+<!-- 5. DATABASE -->
+<h1 id="database">5. Database Schema</h1>
+<p>PostgreSQL database using Drizzle ORM. Schema definitions in <code>lib/db/src/schema/</code>.</p>
+
+<table>
+  <tr><th>Table</th><th>Description</th><th>Key Fields</th></tr>
+  <tr><td><code>users</code></td><td>Customer accounts</td><td>id, name, email, password, phone, avatarUrl</td></tr>
+  <tr><td><code>vendors</code></td><td>Restaurant/bar owners</td><td>id, businessName, email, phone, password, status, plan, planExpiresAt</td></tr>
+  <tr><td><code>listings</code></td><td>Restaurant/venue listings</td><td>id, vendorId, name, slug, category, location, lat/lng, acceptsReservations, acceptsOrders, whatsapp</td></tr>
+  <tr><td><code>listing_photos</code></td><td>Venue photo gallery</td><td>id, listingId, url, caption</td></tr>
+  <tr><td><code>menu_items</code></td><td>Restaurant menu</td><td>id, listingId, name, description, price, category, isAvailable, isPopular</td></tr>
+  <tr><td><code>orders</code></td><td>Customer orders</td><td>id, listingId, userId, items (JSONB), orderType, totalAmount, paymentStatus, paymentReference, status</td></tr>
+  <tr><td><code>payments</code></td><td>Payment transactions</td><td>id, reference, provider, amount, currency, status, paymentType, orderId, vendorId, channel</td></tr>
+  <tr><td><code>reservations</code></td><td>Table bookings</td><td>id, listingId, userId, date, time, partySize, status</td></tr>
+  <tr><td><code>reviews</code></td><td>Customer reviews</td><td>id, listingId, userId, rating, comment, subRatings</td></tr>
+  <tr><td><code>saved_places</code></td><td>User favorites</td><td>id, userId, listingId</td></tr>
+  <tr><td><code>subscriptions</code></td><td>Vendor subscriptions</td><td>id, vendorId, plan, startDate, endDate, status</td></tr>
+  <tr><td><code>subscription_packages</code></td><td>Available plans</td><td>id, name, slug, price, billingCycle, features, maxPhotos, maxMenuItems</td></tr>
+  <tr><td><code>categories</code></td><td>Listing categories</td><td>id, name, slug, icon, isActive, sortOrder</td></tr>
+  <tr><td><code>editors_picks</code></td><td>Curated collections</td><td>id, title, description, listingIds, isActive</td></tr>
+  <tr><td><code>search_logs</code></td><td>Search analytics</td><td>id, query, category, resultsCount</td></tr>
+  <tr><td><code>partners</code></td><td>Partner logos</td><td>id, name, logoUrl, isVisible</td></tr>
+  <tr><td><code>vendor_events</code></td><td>Restaurant events</td><td>id, listingId, title, description, startDate, endDate, category</td></tr>
+  <tr><td><code>site_settings</code></td><td>Platform configuration</td><td>key-value pairs for site name, SEO, onboarding, analytics, social</td></tr>
+  <tr><td><code>listing_views</code></td><td>View tracking</td><td>id, listingId, userId, viewedAt</td></tr>
+</table>
+
+<!-- 6. API ENDPOINTS -->
+<h1 id="api">6. API Endpoints</h1>
+<p>All endpoints are prefixed with <code>/api</code>. Full OpenAPI spec at <code>lib/api-spec/openapi.yaml</code>.</p>
+
+<h2>Authentication</h2>
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr>
+  <tr><td>POST</td><td>/api/auth/register</td><td>User registration</td><td>No</td></tr>
+  <tr><td>POST</td><td>/api/auth/login</td><td>User login</td><td>No</td></tr>
+  <tr><td>GET</td><td>/api/auth/me</td><td>Get current user</td><td>JWT</td></tr>
+  <tr><td>PUT</td><td>/api/auth/me/update</td><td>Update user profile</td><td>JWT</td></tr>
+  <tr><td>POST</td><td>/api/vendor/register</td><td>Vendor registration</td><td>No</td></tr>
+  <tr><td>POST</td><td>/api/vendor/login</td><td>Vendor login</td><td>No</td></tr>
+  <tr><td>POST</td><td>/api/admin/login</td><td>Admin login</td><td>No</td></tr>
+</table>
+
+<h2>Listings & Discovery</h2>
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+  <tr><td>GET</td><td>/api/listings</td><td>Search listings (q, category, lat/lng, nearme, accepts_reservations)</td></tr>
+  <tr><td>GET</td><td>/api/listings/featured</td><td>Featured listings</td></tr>
+  <tr><td>GET</td><td>/api/listings/trending</td><td>Trending listings</td></tr>
+  <tr><td>GET</td><td>/api/listings/recent</td><td>Recently added</td></tr>
+  <tr><td>GET</td><td>/api/listings/:slug</td><td>Single listing by slug</td></tr>
+  <tr><td>GET</td><td>/api/listings/:id/menu</td><td>Listing menu items</td></tr>
+</table>
+
+<h2>Orders & Payments</h2>
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+  <tr><td>POST</td><td>/api/orders</td><td>Create order (with totalAmount)</td></tr>
+  <tr><td>GET</td><td>/api/orders/mine</td><td>User's orders</td></tr>
+  <tr><td>POST</td><td>/api/payments/initialize</td><td>Initialize Paystack payment for order</td></tr>
+  <tr><td>POST</td><td>/api/payments/initialize-subscription</td><td>Initialize vendor subscription payment</td></tr>
+  <tr><td>GET</td><td>/api/payments/verify/:reference</td><td>Verify payment status</td></tr>
+  <tr><td>POST</td><td>/api/payments/webhook</td><td>Paystack webhook (signature verified)</td></tr>
+  <tr><td>GET</td><td>/api/payments/mine</td><td>User's payment history</td></tr>
+</table>
+
+<!-- 7. AUTH -->
+<h1 id="auth">7. Authentication & Authorization</h1>
+<h2>JWT Implementation</h2>
+<ul>
+  <li>Tokens are generated using <code>jsonwebtoken</code> with the <code>SESSION_SECRET</code> env var</li>
+  <li>Passwords hashed with <code>bcrypt</code> (10 salt rounds)</li>
+  <li>Three separate auth flows: user, vendor, admin</li>
+  <li>Auth middleware extracts JWT from <code>Authorization: Bearer &lt;token&gt;</code> header</li>
+  <li>Mobile stores JWT in AsyncStorage; web stores in memory (per-session)</li>
+</ul>
+
+<h2>Role-Based Access</h2>
+<table>
+  <tr><th>Middleware</th><th>Used For</th></tr>
+  <tr><td><code>authMiddleware</code></td><td>User-authenticated endpoints</td></tr>
+  <tr><td><code>vendorAuthMiddleware</code></td><td>Vendor dashboard/management endpoints</td></tr>
+  <tr><td><code>adminAuthMiddleware</code></td><td>Admin portal endpoints</td></tr>
+</table>
+
+<!-- 8. PAYMENTS -->
+<h1 id="payments">8. Payment Integration (Paystack)</h1>
+<h2>Overview</h2>
+<p>Paystack handles all online payments. It supports:</p>
+<ul>
+  <li><strong>Mobile Money</strong> — MTN MoMo, Vodafone Cash, AirtelTigo Money</li>
+  <li><strong>Card payments</strong> — Visa, Mastercard</li>
+  <li><strong>Bank transfers</strong> — Direct bank payment</li>
+</ul>
+
+<h2>Payment Flow</h2>
+<ol>
+  <li>User selects "Pay Online" at checkout and places order</li>
+  <li>Frontend calls <code>POST /api/payments/initialize</code> with order details</li>
+  <li>Backend creates payment record and calls Paystack API to initialize transaction</li>
+  <li>User is redirected to Paystack checkout page (card/MoMo/bank)</li>
+  <li>On completion, Paystack redirects to <code>/payment/verify?reference=xxx</code></li>
+  <li>Frontend calls <code>GET /api/payments/verify/:reference</code> to confirm</li>
+  <li>Paystack sends webhook to <code>POST /api/payments/webhook</code> (HMAC-SHA512 verified)</li>
+  <li>Backend updates order/subscription payment status</li>
+</ol>
+
+<h2>Subscription Payments</h2>
+<ol>
+  <li>Vendor selects a subscription plan</li>
+  <li>Frontend calls <code>POST /api/payments/initialize-subscription</code></li>
+  <li>Same Paystack flow as above</li>
+  <li>On success, vendor's plan and expiry date are updated</li>
+</ol>
+
+<div class="note">
+  <strong>Important:</strong> Set <code>PAYSTACK_SECRET_KEY</code> and <code>PAYSTACK_PUBLIC_KEY</code> environment variables. Test keys start with <code>sk_test_</code> / <code>pk_test_</code>, live keys with <code>sk_live_</code> / <code>pk_live_</code>.
+</div>
+
+<!-- 9. WEB APP -->
+<h1 id="web-app">9. Web Application</h1>
+<h2>Design System</h2>
+<table>
+  <tr><th>Element</th><th>Value</th></tr>
+  <tr><td>Primary Color</td><td><span style="background:#24503a;color:#fff;padding:2px 8px;border-radius:4px">#24503a</span> (Deep Green)</td></tr>
+  <tr><td>Secondary Color</td><td><span style="background:#c98a15;color:#fff;padding:2px 8px;border-radius:4px">#c98a15</span> (Amber)</td></tr>
+  <tr><td>Background</td><td><span style="background:#f7f5f1;padding:2px 8px;border-radius:4px;border:1px solid #ddd">#f7f5f1</span> (Warm Off-White)</td></tr>
+  <tr><td>Typography</td><td>Inter font family</td></tr>
+  <tr><td>UI Library</td><td>shadcn/ui components</td></tr>
+</table>
+
+<h2>Public Pages</h2>
+<ul>
+  <li><code>/</code> — Homepage with hero, categories, featured/trending/recent listings, editor's picks, events, partners</li>
+  <li><code>/search</code> — Full search with dish-level autocomplete, filters, Near Me geolocation</li>
+  <li><code>/listings/:slug</code> — Restaurant detail with menu, reviews, reservation form, order checkout</li>
+  <li><code>/payment/verify</code> — Payment verification callback from Paystack</li>
+</ul>
+
+<!-- 10. MOBILE APP -->
+<h1 id="mobile-app">10. Mobile Application (Expo)</h1>
+<h2>Tab Structure</h2>
+<table>
+  <tr><th>Tab</th><th>Icon</th><th>Screen</th></tr>
+  <tr><td>Home</td><td>compass</td><td>Discover feed with all homepage sections</td></tr>
+  <tr><td>Search</td><td>search</td><td>Dish search + category/occasion filters + Near Me</td></tr>
+  <tr><td>Places</td><td>map-pin</td><td>Find & reserve venues with category chips</td></tr>
+  <tr><td>Saved</td><td>bookmark</td><td>Bookmarked/favorited restaurants</td></tr>
+  <tr><td>Profile</td><td>user</td><td>Profile + avatar upload + settings</td></tr>
+</table>
+
+<h2>Key Features</h2>
+<ul>
+  <li>3-step onboarding flow with push notification permission</li>
+  <li>Paystack payment integration (opens browser for card/MoMo checkout)</li>
+  <li>WhatsApp order routing as alternative payment method</li>
+  <li>Avatar upload via expo-image-picker + object storage</li>
+  <li>Native tab bar with iOS 26+ liquid glass support</li>
+  <li>Vendor dashboard with analytics charts</li>
+</ul>
+
+<!-- 11. ADMIN -->
+<h1 id="admin">11. Admin Portal</h1>
+<table>
+  <tr><th>Page</th><th>URL</th><th>Features</th></tr>
+  <tr><td>Dashboard</td><td>/admin/dashboard</td><td>Stats, search analytics, vendor approval, listing moderation</td></tr>
+  <tr><td>Categories</td><td>/admin/categories</td><td>Add/edit/delete/reorder categories with icons</td></tr>
+  <tr><td>Subscriptions</td><td>/admin/subscriptions</td><td>Manage vendor subscription packages</td></tr>
+  <tr><td>Editor's Picks</td><td>/admin/editors-picks</td><td>Curate featured collections</td></tr>
+  <tr><td>Partners</td><td>/admin/partners</td><td>Manage partner logos</td></tr>
+  <tr><td>Settings</td><td>/admin/settings</td><td>Site config: General, SEO, Onboarding, Splash, Analytics, Social</td></tr>
+</table>
+
+<!-- 12. VENDOR -->
+<h1 id="vendor">12. Vendor Portal</h1>
+<table>
+  <tr><th>Page</th><th>URL</th><th>Features</th></tr>
+  <tr><td>Dashboard</td><td>/vendor/dashboard</td><td>View counts, orders, reservations, rating, mini-charts</td></tr>
+  <tr><td>Menu</td><td>/vendor/menu</td><td>CRUD menu items: name, price, category, availability, popular toggle</td></tr>
+  <tr><td>Events</td><td>/vendor/events</td><td>CRUD events: title, dates, category, image</td></tr>
+  <tr><td>Photos</td><td>/vendor/photos</td><td>Photo gallery with upload/delete</td></tr>
+  <tr><td>Reviews</td><td>/vendor/reviews</td><td>Customer reviews (read-only)</td></tr>
+  <tr><td>Analytics</td><td>/vendor/analytics</td><td>Daily views/orders charts + stat cards</td></tr>
+  <tr><td>Settings</td><td>/vendor/settings</td><td>Toggle acceptsReservations, acceptsOrders</td></tr>
+</table>
+
+<!-- 13. SEO -->
+<h1 id="seo">13. SEO Strategy</h1>
+<ul>
+  <li><strong>Dynamic Sitemap:</strong> <code>GET /api/sitemap.xml</code> generates XML sitemap from all active listings</li>
+  <li><strong>robots.txt:</strong> Allows all crawlers, references sitemap</li>
+  <li><strong>Per-page Meta Tags:</strong> <code>usePageMeta</code> hook sets title, description, OG, Twitter Card, canonical URL</li>
+  <li><strong>JSON-LD:</strong> Organization schema on homepage, Restaurant schema on listing detail</li>
+  <li><strong>OpenGraph:</strong> Full OG metadata for social sharing</li>
+  <li><strong>Admin-configurable:</strong> SEO settings manageable from admin panel (meta tags, OG image, keywords)</li>
+</ul>
+
+<!-- 14. DEPLOYMENT -->
+<h1 id="deployment">14. Deployment & DevOps</h1>
+<h2>Development</h2>
+<table>
+  <tr><th>Service</th><th>Command</th><th>Port</th></tr>
+  <tr><td>API Server</td><td><code>pnpm --filter @workspace/api-server run dev</code></td><td>8080</td></tr>
+  <tr><td>Web App</td><td><code>pnpm --filter @workspace/chowdeck run dev</code></td><td>Dynamic (PORT env var)</td></tr>
+  <tr><td>Mobile App</td><td><code>pnpm --filter @workspace/mobile run dev</code></td><td>Expo Dev Server</td></tr>
+</table>
+
+<h2>Build & Deploy</h2>
+<ul>
+  <li>API Server builds with esbuild to <code>dist/index.mjs</code></li>
+  <li>Web app builds with Vite to <code>dist/</code></li>
+  <li>Mobile app builds via EAS Build (Expo Application Services)</li>
+  <li>Hosted on Replit with automatic deployment</li>
+</ul>
+
+<h2>Vite Proxy Configuration</h2>
+<p>The web app's Vite config proxies <code>/api</code> requests to <code>http://localhost:8080</code> during development.</p>
+
+<!-- 15. ENV VARS -->
+<h1 id="env-vars">15. Environment Variables</h1>
+<table>
+  <tr><th>Variable</th><th>Description</th><th>Required</th></tr>
+  <tr><td><code>DATABASE_URL</code></td><td>PostgreSQL connection string</td><td>Yes</td></tr>
+  <tr><td><code>SESSION_SECRET</code></td><td>JWT signing secret</td><td>Yes</td></tr>
+  <tr><td><code>PAYSTACK_SECRET_KEY</code></td><td>Paystack API secret key</td><td>Yes (for payments)</td></tr>
+  <tr><td><code>PAYSTACK_PUBLIC_KEY</code></td><td>Paystack public key (frontend)</td><td>Yes (for payments)</td></tr>
+  <tr><td><code>PORT</code></td><td>Server port (auto-assigned)</td><td>Yes</td></tr>
+  <tr><td><code>DEFAULT_OBJECT_STORAGE_BUCKET_ID</code></td><td>Object storage bucket</td><td>Yes (for uploads)</td></tr>
+</table>
+
+<!-- 16. SEED DATA -->
+<h1 id="seed-data">16. Seed Data & Test Accounts</h1>
+<table>
+  <tr><th>Role</th><th>Email</th><th>Password</th></tr>
+  <tr><td>Admin</td><td>admin@chowhub.gh</td><td>admin123</td></tr>
+  <tr><td>User</td><td>ama@example.com</td><td>password123</td></tr>
+  <tr><td>Vendor</td><td>muni@chowhub.gh</td><td>password123</td></tr>
+  <tr><td>Vendor</td><td>chopbar@chowhub.gh</td><td>password123</td></tr>
+</table>
+
+<!-- 17. KNOWN ISSUES -->
+<h1 id="known-issues">17. Known Issues & Future Work</h1>
+<h2>Known Issues</h2>
+<ul>
+  <li><code>POST /storage/uploads/request-url</code> has no auth middleware — security concern for file uploads</li>
+  <li>Web auth stores user data in memory only (no localStorage persistence) — refreshing clears login</li>
+  <li>Wouter v3 <code>useLocation()</code> strips query strings — must use <code>window.location.search</code> for URL params</li>
+</ul>
+
+<h2>Future Enhancements</h2>
+<ul>
+  <li>Real-time order tracking with WebSocket/SSE</li>
+  <li>Push notification delivery for order status updates</li>
+  <li>Vendor payout system via Paystack Transfers</li>
+  <li>Multi-language support (English, Twi, Ga, Ewe)</li>
+  <li>Loyalty/rewards program</li>
+  <li>Social features (food photos, follow restaurants)</li>
+  <li>Advanced analytics dashboard with revenue reports</li>
+  <li>Automated vendor plan expiry and renewal reminders</li>
+</ul>
+
+<hr style="margin-top:60px">
+<p style="text-align:center;color:#999;font-size:11px;">ChowHub Ghana Technical Handover Document &mdash; Generated April 3, 2026 &mdash; Confidential</p>
+
+</body>
+</html>
