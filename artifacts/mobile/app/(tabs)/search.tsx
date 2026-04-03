@@ -1,32 +1,79 @@
-import { View, Text, StyleSheet, TextInput, FlatList, ActivityIndicator, Platform, Pressable } from "react-native";
+import { View, Text, StyleSheet, TextInput, FlatList, ActivityIndicator, Platform, Pressable, Keyboard } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useSearchListings, useGetListingAutocomplete, useLogSearch } from "@workspace/api-client-react";
 import { ListingCard } from "@/components/ListingCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const CATEGORIES = [
-  { label: "Chop Bars", value: "chop_bar" },
-  { label: "Fine Dining", value: "fine_dining" },
-  { label: "Cafes", value: "cafe_bakery" },
-  { label: "Street Food", value: "street_food" },
-  { label: "Bars & Grills", value: "bar_grill" },
-  { label: "Seafood", value: "seafood" },
+  { label: "All", value: "", icon: "grid" as const },
+  { label: "Chop Bars", value: "chop_bar", icon: "home" as const },
+  { label: "Fine Dining", value: "fine_dining", icon: "star" as const },
+  { label: "Cafes", value: "cafe_bakery", icon: "coffee" as const },
+  { label: "Street Food", value: "street_food", icon: "truck" as const },
+  { label: "Bars & Grills", value: "bar_grill", icon: "sunset" as const },
+  { label: "Seafood", value: "seafood", icon: "anchor" as const },
 ];
+
+const SORT_OPTIONS = [
+  { label: "Relevant", value: "" },
+  { label: "Top Rated", value: "highest_rated" },
+  { label: "Most Reviewed", value: "most_reviewed" },
+  { label: "Newest", value: "newest" },
+];
+
+const RECENT_SEARCHES_KEY = "chowhub_recent_searches";
 
 export default function SearchScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string }>();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(params.category || "");
+  const [selectedSort, setSelectedSort] = useState("");
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [showSortOptions, setShowSortOptions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
   const isWeb = Platform.OS === "web";
   const logSearchMut = useLogSearch();
   const searchLoggedRef = useRef<string>("");
+
+  useEffect(() => {
+    loadRecentSearches();
+  }, []);
+
+  useEffect(() => {
+    if (params.category) setSelectedCategory(params.category);
+  }, [params.category]);
+
+  const loadRecentSearches = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (stored) setRecentSearches(JSON.parse(stored));
+    } catch { /* empty */ }
+  };
+
+  const saveSearch = async (q: string) => {
+    if (!q.trim() || q.length < 2) return;
+    const updated = [q, ...recentSearches.filter(s => s !== q)].slice(0, 8);
+    setRecentSearches(updated);
+    try {
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    } catch { /* empty */ }
+  };
+
+  const clearRecentSearches = async () => {
+    setRecentSearches([]);
+    try {
+      await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch { /* empty */ }
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(query), 300);
@@ -41,6 +88,7 @@ export default function SearchScreen() {
   const { data, isLoading } = useSearchListings({
     q: debouncedQuery || undefined,
     category: selectedCategory || undefined,
+    sort: selectedSort || undefined,
     limit: 30,
   });
 
@@ -63,8 +111,26 @@ export default function SearchScreen() {
 
   const handleSuggestionPress = (slug: string) => {
     setShowAutocomplete(false);
+    setShowRecent(false);
     router.push(`/listing/${slug}` as any);
   };
+
+  const handleSearchSubmit = () => {
+    setShowAutocomplete(false);
+    setShowRecent(false);
+    if (query.trim()) saveSearch(query.trim());
+    Keyboard.dismiss();
+  };
+
+  const handleRecentPress = (q: string) => {
+    setQuery(q);
+    setDebouncedQuery(q);
+    setShowRecent(false);
+    setShowAutocomplete(false);
+  };
+
+  const hasResults = (data?.listings?.length || 0) > 0;
+  const showEmptySearch = !query && !selectedCategory && !isLoading;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -73,14 +139,17 @@ export default function SearchScreen() {
           <Feather name="search" size={16} color={colors.mutedForeground} />
           <TextInput
             value={query}
-            onChangeText={(t) => { setQuery(t); setShowAutocomplete(true); }}
-            onFocus={() => query.length >= 2 && setShowAutocomplete(true)}
-            placeholder="Search restaurants, cuisines..."
+            onChangeText={(t) => { setQuery(t); setShowAutocomplete(true); setShowRecent(false); }}
+            onFocus={() => {
+              if (query.length >= 2) setShowAutocomplete(true);
+              else if (recentSearches.length > 0) setShowRecent(true);
+            }}
+            placeholder="Search restaurants, dishes, cuisines..."
             placeholderTextColor={colors.mutedForeground}
             style={[styles.input, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}
             autoCapitalize="none"
             returnKeyType="search"
-            onSubmitEditing={() => setShowAutocomplete(false)}
+            onSubmitEditing={handleSearchSubmit}
           />
           {query.length > 0 && (
             <Pressable onPress={() => { setQuery(""); setDebouncedQuery(""); setShowAutocomplete(false); }}>
@@ -89,32 +158,82 @@ export default function SearchScreen() {
           )}
         </View>
 
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={CATEGORIES}
-          keyExtractor={(item) => item.value}
-          contentContainerStyle={{ gap: 8, paddingTop: 10 }}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => setSelectedCategory(prev => prev === item.value ? "" : item.value)}
-              style={[
-                styles.chip,
-                {
-                  borderColor: selectedCategory === item.value ? colors.primary : colors.border,
-                  backgroundColor: selectedCategory === item.value ? colors.primary + "15" : "transparent",
+        <View style={styles.filtersRow}>
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={CATEGORIES}
+            keyExtractor={(item) => item.value || "all"}
+            contentContainerStyle={{ gap: 6 }}
+            style={{ flex: 1 }}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => setSelectedCategory(prev => prev === item.value ? "" : item.value)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: selectedCategory === item.value ? colors.primary : colors.border,
+                    backgroundColor: selectedCategory === item.value ? colors.primary : "transparent",
+                    borderRadius: colors.radius,
+                  },
+                ]}
+              >
+                <Feather name={item.icon} size={12} color={selectedCategory === item.value ? "#fff" : colors.mutedForeground} style={{ marginRight: 4 }} />
+                <Text style={[styles.chipText, {
+                  color: selectedCategory === item.value ? "#fff" : colors.mutedForeground,
+                  fontFamily: selectedCategory === item.value ? "Inter_600SemiBold" : "Inter_400Regular",
+                }]}>{item.label}</Text>
+              </Pressable>
+            )}
+          />
+
+          <Pressable
+            onPress={() => setShowSortOptions(!showSortOptions)}
+            style={[styles.sortBtn, { borderColor: colors.border, borderRadius: colors.radius }]}
+          >
+            <Feather name="sliders" size={14} color={selectedSort ? colors.primary : colors.mutedForeground} />
+          </Pressable>
+        </View>
+
+        {showSortOptions && (
+          <View style={styles.sortRow}>
+            {SORT_OPTIONS.map(opt => (
+              <Pressable
+                key={opt.value || "default"}
+                onPress={() => { setSelectedSort(opt.value); setShowSortOptions(false); }}
+                style={[styles.sortChip, {
+                  backgroundColor: selectedSort === opt.value ? colors.primary + "15" : "transparent",
+                  borderColor: selectedSort === opt.value ? colors.primary : colors.border,
                   borderRadius: colors.radius,
-                },
-              ]}
-            >
-              <Text style={[styles.chipText, {
-                color: selectedCategory === item.value ? colors.primary : colors.mutedForeground,
-                fontFamily: selectedCategory === item.value ? "Inter_600SemiBold" : "Inter_400Regular",
-              }]}>{item.label}</Text>
-            </Pressable>
-          )}
-        />
+                }]}
+              >
+                <Text style={[styles.chipText, {
+                  color: selectedSort === opt.value ? colors.primary : colors.mutedForeground,
+                  fontFamily: "Inter_500Medium",
+                }]}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
+
+      {showRecent && recentSearches.length > 0 && !query && (
+        <View style={[styles.recentPanel, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={styles.recentHeader}>
+            <Text style={[styles.recentTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Recent Searches</Text>
+            <Pressable onPress={clearRecentSearches}>
+              <Text style={[styles.clearText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>Clear</Text>
+            </Pressable>
+          </View>
+          {recentSearches.map((s, i) => (
+            <Pressable key={i} onPress={() => handleRecentPress(s)} style={[styles.recentItem, { borderBottomColor: colors.border }]}>
+              <Feather name="clock" size={14} color={colors.mutedForeground} />
+              <Text style={[styles.recentText, { color: colors.foreground, fontFamily: "Inter_400Regular" }]}>{s}</Text>
+              <Feather name="arrow-up-left" size={14} color={colors.mutedForeground} />
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {showAutocomplete && suggestions && suggestions.length > 0 && (
         <View style={[styles.autocomplete, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -139,22 +258,52 @@ export default function SearchScreen() {
       <FlatList
         data={data?.listings || []}
         keyExtractor={(item: any) => item.id}
-        contentContainerStyle={{ padding: 20, paddingBottom: isWeb ? 34 : 100 }}
+        numColumns={1}
+        contentContainerStyle={{ padding: 16, paddingBottom: isWeb ? 34 : 100 }}
         renderItem={({ item }: { item: any }) => <ListingCard listing={item} />}
-        onScrollBeginDrag={() => setShowAutocomplete(false)}
+        onScrollBeginDrag={() => { setShowAutocomplete(false); setShowRecent(false); }}
         ListHeaderComponent={
-          <Text style={[styles.resultCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
-            {isLoading ? "Searching..." : `${data?.total || 0} places found`}
-          </Text>
+          <View style={styles.resultHeader}>
+            <Text style={[styles.resultCount, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+              {isLoading ? "Searching..." : `${data?.total || 0} places found`}
+            </Text>
+            {selectedSort && (
+              <View style={[styles.activeSortBadge, { backgroundColor: colors.primary + "15", borderRadius: colors.radius }]}>
+                <Text style={[styles.activeSortText, { color: colors.primary, fontFamily: "Inter_500Medium" }]}>
+                  {SORT_OPTIONS.find(o => o.value === selectedSort)?.label}
+                </Text>
+                <Pressable onPress={() => setSelectedSort("")}>
+                  <Feather name="x" size={12} color={colors.primary} />
+                </Pressable>
+              </View>
+            )}
+          </View>
         }
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+          ) : showEmptySearch ? (
+            <View style={styles.empty}>
+              <View style={[styles.emptyIconWrap, { backgroundColor: colors.primary + "10" }]}>
+                <Feather name="compass" size={36} color={colors.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                Explore ChowHub
+              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Search for restaurants, dishes, or cuisines.{"\n"}Use categories to filter by type.
+              </Text>
+            </View>
           ) : (
             <View style={styles.empty}>
-              <Feather name="search" size={32} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_500Medium" }]}>
-                {query ? "No places found" : "Search for restaurants"}
+              <View style={[styles.emptyIconWrap, { backgroundColor: "#fef3c7" }]}>
+                <Feather name="search" size={36} color="#f59e0b" />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>
+                No places found
+              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>
+                Try a different search term or category
               </Text>
             </View>
           )
@@ -166,16 +315,31 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchHeader: { paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
-  inputWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 40 },
-  input: { flex: 1, fontSize: 14, height: 40 },
-  chip: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 6 },
-  chipText: { fontSize: 13 },
-  resultCount: { fontSize: 13, marginBottom: 12 },
-  empty: { alignItems: "center", paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 15 },
+  searchHeader: { paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: 1 },
+  inputWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 42 },
+  input: { flex: 1, fontSize: 14, height: 42 },
+  filtersRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10 },
+  chip: { flexDirection: "row", alignItems: "center", borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  chipText: { fontSize: 12 },
+  sortBtn: { borderWidth: 1, padding: 8 },
+  sortRow: { flexDirection: "row", gap: 6, paddingTop: 8 },
+  sortChip: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  resultCount: { fontSize: 13 },
+  activeSortBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  activeSortText: { fontSize: 11 },
+  empty: { alignItems: "center", paddingTop: 60, gap: 8 },
+  emptyIconWrap: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  emptyTitle: { fontSize: 18 },
+  emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
   autocomplete: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 1, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
   autoItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   autoName: { fontSize: 14 },
   autoMeta: { fontSize: 12, textTransform: "capitalize" },
+  recentPanel: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  recentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  recentTitle: { fontSize: 14 },
+  clearText: { fontSize: 12 },
+  recentItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  recentText: { flex: 1, fontSize: 14 },
 });

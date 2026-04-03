@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, sql, asc } from "drizzle-orm";
-import { db, listingsTable, listingPhotosTable, menuItemsTable, reservationsTable, ordersTable, reviewsTable, usersTable } from "@workspace/db";
+import { eq, and, desc, sql, asc, gte } from "drizzle-orm";
+import { db, listingsTable, listingPhotosTable, menuItemsTable, reservationsTable, ordersTable, reviewsTable, usersTable, listingViewsTable } from "@workspace/db";
 import { vendorAuthMiddleware } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -316,21 +316,58 @@ router.get("/vendor/stats", vendorAuthMiddleware, async (req, res): Promise<void
   const vendorId = (req as any).user.id;
   const [listing] = await db.select().from(listingsTable).where(eq(listingsTable.vendorId, vendorId));
   if (!listing) {
-    res.json({ totalReservationsToday: 0, totalOrdersToday: 0, pendingReservations: 0, pendingOrders: 0, averageRating: 0, totalReviews: 0, profileViews: 0 });
+    res.json({
+      totalReservationsToday: 0, totalOrdersToday: 0, pendingReservations: 0, pendingOrders: 0,
+      averageRating: 0, totalReviews: 0, profileViews: 0, uniqueProfileViews: 0,
+      totalOrders: 0, totalReservations: 0, viewsThisWeek: 0, viewsThisMonth: 0,
+      ordersThisWeek: 0, ordersThisMonth: 0, dailyViews: [], dailyOrders: [],
+    });
     return;
   }
 
   const today = new Date().toISOString().split("T")[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [reservationStats] = await db.select({
     todayCount: sql<number>`count(*) filter (where ${reservationsTable.date} = ${today})`,
     pendingCount: sql<number>`count(*) filter (where ${reservationsTable.status} = 'pending')`,
+    totalCount: sql<number>`count(*)`,
   }).from(reservationsTable).where(eq(reservationsTable.listingId, listing.id));
 
   const [orderStats] = await db.select({
     todayCount: sql<number>`count(*) filter (where ${ordersTable.createdAt}::date = current_date)`,
     pendingCount: sql<number>`count(*) filter (where ${ordersTable.status} = 'pending')`,
+    totalCount: sql<number>`count(*)`,
+    weekCount: sql<number>`count(*) filter (where ${ordersTable.createdAt} >= ${weekAgo})`,
+    monthCount: sql<number>`count(*) filter (where ${ordersTable.createdAt} >= ${monthAgo})`,
   }).from(ordersTable).where(eq(ordersTable.listingId, listing.id));
+
+  const [viewStats] = await db.select({
+    totalViews: sql<number>`count(*)`,
+    uniqueViews: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+    weekViews: sql<number>`count(*) filter (where ${listingViewsTable.createdAt} >= ${weekAgo})`,
+    monthViews: sql<number>`count(*) filter (where ${listingViewsTable.createdAt} >= ${monthAgo})`,
+  }).from(listingViewsTable).where(eq(listingViewsTable.listingId, listing.id));
+
+  const dailyViews = await db.select({
+    date: sql<string>`date(${listingViewsTable.createdAt})`,
+    views: sql<number>`count(*)`,
+    uniqueViews: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+  }).from(listingViewsTable)
+    .where(and(eq(listingViewsTable.listingId, listing.id), gte(listingViewsTable.createdAt, monthAgo)))
+    .groupBy(sql`date(${listingViewsTable.createdAt})`)
+    .orderBy(sql`date(${listingViewsTable.createdAt}) asc`)
+    .limit(30);
+
+  const dailyOrders = await db.select({
+    date: sql<string>`date(${ordersTable.createdAt})`,
+    count: sql<number>`count(*)`,
+  }).from(ordersTable)
+    .where(and(eq(ordersTable.listingId, listing.id), gte(ordersTable.createdAt, monthAgo)))
+    .groupBy(sql`date(${ordersTable.createdAt})`)
+    .orderBy(sql`date(${ordersTable.createdAt}) asc`)
+    .limit(30);
 
   res.json({
     totalReservationsToday: Number(reservationStats.todayCount),
@@ -339,7 +376,16 @@ router.get("/vendor/stats", vendorAuthMiddleware, async (req, res): Promise<void
     pendingOrders: Number(orderStats.pendingCount),
     averageRating: listing.averageRating,
     totalReviews: listing.totalReviews,
-    profileViews: 0,
+    profileViews: Number(viewStats.totalViews),
+    uniqueProfileViews: Number(viewStats.uniqueViews),
+    totalOrders: Number(orderStats.totalCount),
+    totalReservations: Number(reservationStats.totalCount),
+    viewsThisWeek: Number(viewStats.weekViews),
+    viewsThisMonth: Number(viewStats.monthViews),
+    ordersThisWeek: Number(orderStats.weekCount),
+    ordersThisMonth: Number(orderStats.monthCount),
+    dailyViews: dailyViews.map(d => ({ date: d.date, views: Number(d.views), uniqueViews: Number(d.uniqueViews) })),
+    dailyOrders: dailyOrders.map(d => ({ date: d.date, count: Number(d.count) })),
   });
 });
 

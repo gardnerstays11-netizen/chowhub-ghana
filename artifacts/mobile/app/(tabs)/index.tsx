@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, RefreshControl, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
-import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetPopularListings, useGetTrendingListings, useGetUpcomingEvents, useGetPartners } from "@workspace/api-client-react";
+import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetPopularListings, useGetTrendingListings, useGetUpcomingEvents, useGetPartners, useGetTopRatedListings, useSearchListings } from "@workspace/api-client-react";
 import { DiscoverCard } from "@/components/DiscoverCard";
 import { EventCard } from "@/components/EventCard";
 import { useRouter } from "expo-router";
@@ -69,6 +69,31 @@ function HorizontalCarousel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function QuickStatBanner() {
+  const colors = useColors();
+  return (
+    <View style={[styles.statBanner, { backgroundColor: colors.primary + "08" }]}>
+      <View style={styles.statItem}>
+        <Feather name="map-pin" size={16} color={colors.primary} />
+        <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>50+</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Restaurants</Text>
+      </View>
+      <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+      <View style={styles.statItem}>
+        <Feather name="star" size={16} color="#f59e0b" />
+        <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>4.5+</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Avg Rating</Text>
+      </View>
+      <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+      <View style={styles.statItem}>
+        <Feather name="map" size={16} color={colors.primary} />
+        <Text style={[styles.statNum, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>10+</Text>
+        <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Cities</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -81,18 +106,21 @@ export default function HomeScreen() {
   const { data: recent, refetch: rr } = useGetRecentListings({ limit: 10 });
   const { data: popular, refetch: rp } = useGetPopularListings({ limit: 10 });
   const { data: trending, refetch: rt } = useGetTrendingListings({ limit: 10 });
+  const { data: topRated, refetch: rtr } = useGetTopRatedListings({ limit: 10 });
   const { data: events, refetch: re } = useGetUpcomingEvents({ limit: 6 });
   const { data: partners } = useGetPartners();
   const { data: nearby, refetch: rn } = useGetNearbyListings(
     { lat: coords?.lat || 0, lng: coords?.lng || 0, radius: 10, limit: 8 },
     { query: { enabled: !!coords } as any }
   );
+  const { data: quickBites } = useSearchListings({ category: "street_food", limit: 8 });
+  const { data: cafes } = useSearchListings({ category: "cafe_bakery", limit: 8 });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([rf(), rr(), rp(), rt(), re(), coords ? rn() : Promise.resolve()]);
+    await Promise.all([rf(), rr(), rp(), rt(), rtr(), re(), coords ? rn() : Promise.resolve()]);
     setRefreshing(false);
-  }, [rf, rr, rp, rt, re, rn, coords]);
+  }, [rf, rr, rp, rt, rtr, re, rn, coords]);
 
   const loading = fl && !featured;
 
@@ -104,7 +132,10 @@ export default function HomeScreen() {
     >
       <View style={[styles.hero, { backgroundColor: colors.primary, paddingTop: isWeb ? 67 + 16 : insets.top + 12 }]}>
         <Text style={[styles.heroTitle, { color: colors.primaryForeground, fontFamily: "Inter_700Bold" }]}>
-          Discover great food{"\n"}across Ghana 🇬🇭
+          Discover great food{"\n"}across Ghana
+        </Text>
+        <Text style={[styles.heroSubtitle, { color: "rgba(255,255,255,0.7)", fontFamily: "Inter_400Regular" }]}>
+          From chop bars to fine dining
         </Text>
         <Pressable
           onPress={() => router.push("/search")}
@@ -134,6 +165,8 @@ export default function HomeScreen() {
           </Pressable>
         ))}
       </ScrollView>
+
+      <QuickStatBanner />
 
       {loading && (
         <View style={styles.loadingWrap}>
@@ -174,6 +207,23 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {topRated && topRated.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            icon="star"
+            iconColor="#f59e0b"
+            title="Top Rated"
+            subtitle="Highest rated spots in Ghana"
+            onSeeAll={() => router.push({ pathname: "/search", params: { sort: "highest_rated" } })}
+          />
+          <HorizontalCarousel>
+            {topRated.map((l: any) => (
+              <DiscoverCard key={l.id} listing={l} variant="standard" />
+            ))}
+          </HorizontalCarousel>
+        </View>
+      )}
+
       {popular && popular.length > 0 && (
         <View style={styles.section}>
           <SectionHeader
@@ -203,6 +253,40 @@ export default function HomeScreen() {
           <HorizontalCarousel>
             {trending.map((l: any) => (
               <DiscoverCard key={l.id} listing={l} variant="compact" />
+            ))}
+          </HorizontalCarousel>
+        </View>
+      )}
+
+      {quickBites?.listings && quickBites.listings.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            icon="truck"
+            iconColor="#10b981"
+            title="Quick Bites"
+            subtitle="Street food & fast eats"
+            onSeeAll={() => router.push({ pathname: "/search", params: { category: "street_food" } })}
+          />
+          <HorizontalCarousel>
+            {quickBites.listings.map((l: any) => (
+              <DiscoverCard key={l.id} listing={l} variant="compact" />
+            ))}
+          </HorizontalCarousel>
+        </View>
+      )}
+
+      {cafes?.listings && cafes.listings.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            icon="coffee"
+            iconColor="#8b5cf6"
+            title="Cafes & Bakeries"
+            subtitle="Coffee, pastries & more"
+            onSeeAll={() => router.push({ pathname: "/search", params: { category: "cafe_bakery" } })}
+          />
+          <HorizontalCarousel>
+            {cafes.listings.map((l: any) => (
+              <DiscoverCard key={l.id} listing={l} variant="standard" />
             ))}
           </HorizontalCarousel>
         </View>
@@ -269,7 +353,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   hero: { paddingHorizontal: 20, paddingBottom: 20 },
-  heroTitle: { fontSize: 26, lineHeight: 32, marginBottom: 14 },
+  heroTitle: { fontSize: 26, lineHeight: 32, marginBottom: 4 },
+  heroSubtitle: { fontSize: 14, marginBottom: 14 },
   searchBar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
   searchPlaceholder: { fontSize: 14 },
 
@@ -277,6 +362,12 @@ const styles = StyleSheet.create({
   categoryChip: { alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, minWidth: 80 },
   categoryIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   categoryLabel: { fontSize: 11 },
+
+  statBanner: { flexDirection: "row", marginHorizontal: 20, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 4, alignItems: "center", justifyContent: "space-around" },
+  statItem: { alignItems: "center", gap: 4 },
+  statNum: { fontSize: 18 },
+  statLabel: { fontSize: 10 },
+  statDivider: { width: 1, height: 32 },
 
   section: { marginTop: 4 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },

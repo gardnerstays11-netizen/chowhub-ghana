@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
-import { db, usersTable, vendorsTable, listingsTable, listingPhotosTable, reviewsTable, reservationsTable, ordersTable, searchLogsTable } from "@workspace/db";
+import { eq, and, desc, sql, inArray, gte, asc } from "drizzle-orm";
+import { db, usersTable, vendorsTable, listingsTable, listingPhotosTable, reviewsTable, reservationsTable, ordersTable, searchLogsTable, subscriptionPackagesTable, listingViewsTable } from "@workspace/db";
 import { adminAuthMiddleware } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -264,6 +264,132 @@ router.delete("/admin/reviews/:reviewId", adminAuthMiddleware, async (req, res):
   const reviewId = Array.isArray(req.params.reviewId) ? req.params.reviewId[0] : req.params.reviewId;
   await db.delete(reviewsTable).where(eq(reviewsTable.id, reviewId));
   res.sendStatus(204);
+});
+
+router.get("/admin/subscription-packages", adminAuthMiddleware, async (_req, res): Promise<void> => {
+  const packages = await db.select().from(subscriptionPackagesTable).orderBy(asc(subscriptionPackagesTable.sortOrder));
+  res.json(packages.map(p => ({
+    id: p.id, name: p.name, slug: p.slug, description: p.description,
+    price: p.price, billingCycle: p.billingCycle, features: p.features,
+    maxPhotos: p.maxPhotos, maxMenuItems: p.maxMenuItems,
+    isFeaturedIncluded: p.isFeaturedIncluded, prioritySupport: p.prioritySupport,
+    analyticsAccess: p.analyticsAccess, sortOrder: p.sortOrder, isActive: p.isActive,
+    createdAt: p.createdAt.toISOString(), updatedAt: p.updatedAt.toISOString(),
+  })));
+});
+
+router.post("/admin/subscription-packages", adminAuthMiddleware, async (req, res): Promise<void> => {
+  const { name, slug, description, price, billingCycle, features, maxPhotos, maxMenuItems, isFeaturedIncluded, prioritySupport, analyticsAccess, sortOrder, isActive } = req.body;
+  const [pkg] = await db.insert(subscriptionPackagesTable).values({
+    name, slug, description, price: parseFloat(price), billingCycle,
+    features: features || [], maxPhotos: maxPhotos || 5, maxMenuItems: maxMenuItems || 20,
+    isFeaturedIncluded: isFeaturedIncluded || false, prioritySupport: prioritySupport || false,
+    analyticsAccess: analyticsAccess || "basic", sortOrder: sortOrder || 0, isActive: isActive !== false,
+  }).returning();
+
+  res.status(201).json({
+    id: pkg.id, name: pkg.name, slug: pkg.slug, description: pkg.description,
+    price: pkg.price, billingCycle: pkg.billingCycle, features: pkg.features,
+    maxPhotos: pkg.maxPhotos, maxMenuItems: pkg.maxMenuItems,
+    isFeaturedIncluded: pkg.isFeaturedIncluded, prioritySupport: pkg.prioritySupport,
+    analyticsAccess: pkg.analyticsAccess, sortOrder: pkg.sortOrder, isActive: pkg.isActive,
+    createdAt: pkg.createdAt.toISOString(), updatedAt: pkg.updatedAt.toISOString(),
+  });
+});
+
+router.put("/admin/subscription-packages/:packageId", adminAuthMiddleware, async (req, res): Promise<void> => {
+  const packageId = Array.isArray(req.params.packageId) ? req.params.packageId[0] : req.params.packageId;
+  const { name, slug, description, price, billingCycle, features, maxPhotos, maxMenuItems, isFeaturedIncluded, prioritySupport, analyticsAccess, sortOrder, isActive } = req.body;
+
+  const updateData: any = { updatedAt: new Date() };
+  if (name !== undefined) updateData.name = name;
+  if (slug !== undefined) updateData.slug = slug;
+  if (description !== undefined) updateData.description = description;
+  if (price !== undefined) updateData.price = parseFloat(price);
+  if (billingCycle !== undefined) updateData.billingCycle = billingCycle;
+  if (features !== undefined) updateData.features = features;
+  if (maxPhotos !== undefined) updateData.maxPhotos = maxPhotos;
+  if (maxMenuItems !== undefined) updateData.maxMenuItems = maxMenuItems;
+  if (isFeaturedIncluded !== undefined) updateData.isFeaturedIncluded = isFeaturedIncluded;
+  if (prioritySupport !== undefined) updateData.prioritySupport = prioritySupport;
+  if (analyticsAccess !== undefined) updateData.analyticsAccess = analyticsAccess;
+  if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+  if (isActive !== undefined) updateData.isActive = isActive;
+
+  const [pkg] = await db.update(subscriptionPackagesTable).set(updateData).where(eq(subscriptionPackagesTable.id, packageId)).returning();
+  if (!pkg) { res.status(404).json({ error: "Package not found" }); return; }
+
+  res.json({
+    id: pkg.id, name: pkg.name, slug: pkg.slug, description: pkg.description,
+    price: pkg.price, billingCycle: pkg.billingCycle, features: pkg.features,
+    maxPhotos: pkg.maxPhotos, maxMenuItems: pkg.maxMenuItems,
+    isFeaturedIncluded: pkg.isFeaturedIncluded, prioritySupport: pkg.prioritySupport,
+    analyticsAccess: pkg.analyticsAccess, sortOrder: pkg.sortOrder, isActive: pkg.isActive,
+    createdAt: pkg.createdAt.toISOString(), updatedAt: pkg.updatedAt.toISOString(),
+  });
+});
+
+router.delete("/admin/subscription-packages/:packageId", adminAuthMiddleware, async (req, res): Promise<void> => {
+  const packageId = Array.isArray(req.params.packageId) ? req.params.packageId[0] : req.params.packageId;
+  await db.delete(subscriptionPackagesTable).where(eq(subscriptionPackagesTable.id, packageId));
+  res.sendStatus(204);
+});
+
+router.get("/admin/platform-analytics", adminAuthMiddleware, async (req, res): Promise<void> => {
+  const days = parseInt(req.query.days as string) || 30;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [viewStats] = await db.select({
+    totalViews: sql<number>`count(*)`,
+    uniqueVisitors: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+  }).from(listingViewsTable)
+    .where(gte(listingViewsTable.createdAt, since));
+
+  const dailyPageViews = await db.select({
+    date: sql<string>`date(${listingViewsTable.createdAt})`,
+    views: sql<number>`count(*)`,
+    uniqueVisitors: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+  }).from(listingViewsTable)
+    .where(gte(listingViewsTable.createdAt, since))
+    .groupBy(sql`date(${listingViewsTable.createdAt})`)
+    .orderBy(sql`date(${listingViewsTable.createdAt}) asc`)
+    .limit(30);
+
+  const topListings = await db.select({
+    listingId: listingViewsTable.listingId,
+    listingName: listingsTable.name,
+    views: sql<number>`count(*)`,
+    uniqueViews: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+  }).from(listingViewsTable)
+    .leftJoin(listingsTable, eq(listingViewsTable.listingId, listingsTable.id))
+    .where(gte(listingViewsTable.createdAt, since))
+    .groupBy(listingViewsTable.listingId, listingsTable.name)
+    .orderBy(sql`count(*) desc`)
+    .limit(10);
+
+  const [orderStats] = await db.select({
+    totalOrders: sql<number>`count(*)`,
+    recentOrders: sql<number>`count(*) filter (where ${ordersTable.createdAt} >= ${since})`,
+  }).from(ordersTable);
+
+  res.json({
+    period: { days, since: since.toISOString() },
+    views: {
+      total: Number(viewStats.totalViews),
+      uniqueVisitors: Number(viewStats.uniqueVisitors),
+    },
+    orders: {
+      total: Number(orderStats.totalOrders),
+      recent: Number(orderStats.recentOrders),
+    },
+    dailyPageViews: dailyPageViews.map(d => ({
+      date: d.date, views: Number(d.views), uniqueVisitors: Number(d.uniqueVisitors),
+    })),
+    topListings: topListings.map(l => ({
+      listingId: l.listingId, listingName: l.listingName,
+      views: Number(l.views), uniqueViews: Number(l.uniqueViews),
+    })),
+  });
 });
 
 export default router;

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, or, sql, desc, asc, inArray } from "drizzle-orm";
-import { db, listingsTable, listingPhotosTable, ordersTable, reviewsTable } from "@workspace/db";
+import { eq, and, ilike, or, sql, desc, asc, inArray, gte } from "drizzle-orm";
+import { db, listingsTable, listingPhotosTable, ordersTable, reviewsTable, listingViewsTable } from "@workspace/db";
+import crypto from "crypto";
 
 const router: IRouter = Router();
 
@@ -428,6 +429,56 @@ router.get("/listings/:slug", async (req, res): Promise<void> => {
       displayOrder: p.displayOrder,
     })),
     createdAt: listing.createdAt.toISOString(),
+  });
+});
+
+router.post("/listings/:slug/view", async (req, res): Promise<void> => {
+  const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+  const [listing] = await db.select({ id: listingsTable.id }).from(listingsTable).where(eq(listingsTable.slug, slug));
+  if (!listing) { res.status(404).json({ error: "Listing not found" }); return; }
+
+  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
+  const ipHash = crypto.createHash("sha256").update(ip).digest("hex").substring(0, 16);
+  const userId = (req as any).user?.id || null;
+  const sessionId = req.body?.sessionId || null;
+
+  await db.insert(listingViewsTable).values({
+    listingId: listing.id,
+    userId,
+    sessionId,
+    ipHash,
+  });
+
+  res.json({ ok: true });
+});
+
+router.get("/listings/:id/views", async (req, res): Promise<void> => {
+  const listingId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const days = parseInt(req.query.days as string) || 30;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const [stats] = await db.select({
+    totalViews: sql<number>`count(*)`,
+    uniqueViews: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+    uniqueUsers: sql<number>`count(distinct ${listingViewsTable.userId})`,
+  }).from(listingViewsTable)
+    .where(and(eq(listingViewsTable.listingId, listingId), gte(listingViewsTable.createdAt, since)));
+
+  const dailyViews = await db.select({
+    date: sql<string>`date(${listingViewsTable.createdAt})`,
+    views: sql<number>`count(*)`,
+    uniqueViews: sql<number>`count(distinct ${listingViewsTable.ipHash})`,
+  }).from(listingViewsTable)
+    .where(and(eq(listingViewsTable.listingId, listingId), gte(listingViewsTable.createdAt, since)))
+    .groupBy(sql`date(${listingViewsTable.createdAt})`)
+    .orderBy(sql`date(${listingViewsTable.createdAt}) desc`)
+    .limit(30);
+
+  res.json({
+    totalViews: Number(stats.totalViews),
+    uniqueViews: Number(stats.uniqueViews),
+    uniqueUsers: Number(stats.uniqueUsers),
+    dailyViews: dailyViews.map(d => ({ date: d.date, views: Number(d.views), uniqueViews: Number(d.uniqueViews) })),
   });
 });
 

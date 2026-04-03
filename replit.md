@@ -47,6 +47,8 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `partners` — Partner logos for homepage display (name, logoUrl, website, sortOrder, active)
 - `vendor_events` — Vendor events for discovery feed (title, description, eventDate, endDate, imageUrl, category, listingId, vendorId)
 - `site_settings` — Key-value site configuration (branding, SEO meta, analytics IDs, social links, custom scripts)
+- `listing_views` — Page view tracking per listing (listingId, userId, sessionId, ipHash, createdAt)
+- `subscription_packages` — Admin-managed subscription tiers (name, slug, price, billingCycle, features, maxPhotos, maxMenuItems, analytics access, featured badge, priority support)
 
 ### API Routes (under `/api`)
 - Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
@@ -63,6 +65,9 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - Partners: `GET /partners` (public active list), `POST/PUT/DELETE /admin/partners`
 - Storage: `POST /storage/uploads/request-url`, `GET /storage/objects/*`
 - Site Settings: `GET /site-settings` (public), `PUT /admin/site-settings` (admin update)
+- Listing Views: `POST /listings/:slug/view` (track view), `GET /listings/:id/views` (view analytics)
+- Subscription Packages: `GET/POST /admin/subscription-packages`, `PUT/DELETE /admin/subscription-packages/:id`
+- Platform Analytics: `GET /admin/platform-analytics` (page views, top listings, daily trends)
 
 ### Design System
 - **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
@@ -99,10 +104,12 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation)
 - `/admin/partners` — Manage partner logos (add, edit, delete, toggle visibility, upload logos via object storage)
 - `/admin/settings` — Site Settings (General: name/tagline/logo/favicon/colors, SEO: meta tags/OG image/keywords, Analytics: GA4/GTM/Facebook Pixel/Hotjar, Social: contact info & social links)
+- `/admin/subscriptions` — Subscription Packages management (create, edit, delete plans with pricing, features, limits)
 
 ## Mobile App (Expo)
 
-- **Tabs**: Home (Discover feed: categories, nearby, featured picks, popular joints, trending spots, upcoming events, recently added, partners), Search (autocomplete, category chips, search logging), Saved, Profile
+- **Tabs**: Home (Discover feed: stat banner, categories, nearby, featured picks, top rated, popular joints, trending spots, quick bites, cafes & bakeries, upcoming events, recently added, partners), Search (autocomplete, category chips, sort filters, recent searches, search logging), Saved, Profile
+- **Vendor Dashboard**: Enhanced with view counts (total + unique), orders (total, today, weekly, monthly), reservations, rating/reviews, daily views/orders mini-charts, performance overview
 - **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
 - **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`

@@ -1,9 +1,35 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, Dimensions } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGetVendorListing, useGetVendorMenu, useGetVendorReservations, useGetVendorOrders } from "@workspace/api-client-react";
+import { useGetVendorListing, useGetVendorMenu, useGetVendorReservations, useGetVendorOrders, useGetVendorStats } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
+
+const screenWidth = Dimensions.get("window").width;
+
+function MiniChart({ data, color, height = 40 }: { data: number[]; color: string; height?: number }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const width = screenWidth - 80;
+  const barWidth = Math.max(2, (width / data.length) - 2);
+
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-end", height, gap: 1 }}>
+      {data.map((val, i) => (
+        <View
+          key={i}
+          style={{
+            width: barWidth,
+            height: Math.max(2, (val / max) * height),
+            backgroundColor: color,
+            borderRadius: 1,
+            opacity: 0.7 + (i / data.length) * 0.3,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function VendorDashboard() {
   const colors = useColors();
@@ -16,6 +42,7 @@ export default function VendorDashboard() {
   const { data: menu } = useGetVendorMenu({ query: { enabled: isVendor } as any });
   const { data: reservations } = useGetVendorReservations(undefined, { query: { enabled: isVendor } as any });
   const { data: orders } = useGetVendorOrders(undefined, { query: { enabled: isVendor } as any });
+  const { data: stats } = useGetVendorStats({ query: { enabled: isVendor } as any });
 
   if (!isAuthenticated || mode !== "vendor") {
     return (
@@ -29,36 +56,102 @@ export default function VendorDashboard() {
     );
   }
 
-  const StatCard = ({ icon, label, value }: { icon: string; label: string; value: string | number }) => (
+  const s = stats as any;
+  const dailyViewData = s?.dailyViews?.map((d: any) => d.views) || [];
+  const dailyOrderData = s?.dailyOrders?.map((d: any) => d.count) || [];
+
+  const StatCard = ({ icon, label, value, iconColor, subtitle }: { icon: string; label: string; value: string | number; iconColor?: string; subtitle?: string }) => (
     <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
-      <Feather name={icon as any} size={20} color={colors.primary} />
+      <View style={[styles.statIconWrap, { backgroundColor: (iconColor || colors.primary) + "12" }]}>
+        <Feather name={icon as any} size={18} color={iconColor || colors.primary} />
+      </View>
       <Text style={[styles.statValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{label}</Text>
+      {subtitle && <Text style={[styles.statSublabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{subtitle}</Text>}
     </View>
   );
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={{ paddingTop: isWeb ? 67 + 16 : 16, paddingBottom: isWeb ? 34 : 40 }}>
-      <Text style={[styles.heading, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dashboard</Text>
-      <Text style={[styles.subheading, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{vendor?.businessName}</Text>
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={[styles.heading, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Dashboard</Text>
+          <Text style={[styles.subheading, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{vendor?.businessName}</Text>
+        </View>
+        {listing && (
+          <View style={[styles.statusBadge, { backgroundColor: listing.status === "active" ? "#dcfce7" : "#fef3c7", borderRadius: colors.radius }]}>
+            <View style={[styles.statusDot, { backgroundColor: listing.status === "active" ? "#22c55e" : "#f59e0b" }]} />
+            <Text style={[styles.statusText, { color: listing.status === "active" ? "#166534" : "#92400e", fontFamily: "Inter_500Medium" }]}>
+              {listing.status || "Active"}
+            </Text>
+          </View>
+        )}
+      </View>
 
       {isLoading ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : (
         <>
           <View style={styles.statsRow}>
-            <StatCard icon="list" label="Menu Items" value={menu?.length || 0} />
-            <StatCard icon="calendar" label="Reservations" value={reservations?.length || 0} />
+            <StatCard icon="eye" label="Total Views" value={s?.profileViews || 0} iconColor="#6366f1" subtitle={`${s?.uniqueProfileViews || 0} unique`} />
+            <StatCard icon="shopping-bag" label="Total Orders" value={s?.totalOrders || 0} iconColor="#f59e0b" subtitle={`${s?.totalOrdersToday || 0} today`} />
           </View>
           <View style={styles.statsRow}>
-            <StatCard icon="shopping-bag" label="Orders" value={orders?.length || 0} />
-            <StatCard icon="star" label="Rating" value={listing?.averageRating?.toFixed(1) || "—"} />
+            <StatCard icon="calendar" label="Reservations" value={s?.totalReservations || 0} iconColor="#10b981" subtitle={`${s?.pendingReservations || 0} pending`} />
+            <StatCard icon="star" label="Rating" value={listing?.averageRating?.toFixed(1) || "—"} iconColor="#f59e0b" subtitle={`${s?.totalReviews || 0} reviews`} />
           </View>
+
+          <View style={[styles.analyticsCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+            <Text style={[styles.analyticsTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Performance Overview</Text>
+            <Text style={[styles.analyticsPeriod, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Last 30 days</Text>
+
+            <View style={styles.performRow}>
+              <View style={styles.performItem}>
+                <Feather name="trending-up" size={14} color="#6366f1" />
+                <Text style={[styles.performLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Views this week</Text>
+                <Text style={[styles.performValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{s?.viewsThisWeek || 0}</Text>
+              </View>
+              <View style={styles.performItem}>
+                <Feather name="activity" size={14} color="#10b981" />
+                <Text style={[styles.performLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Views this month</Text>
+                <Text style={[styles.performValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{s?.viewsThisMonth || 0}</Text>
+              </View>
+            </View>
+
+            <View style={styles.performRow}>
+              <View style={styles.performItem}>
+                <Feather name="package" size={14} color="#f59e0b" />
+                <Text style={[styles.performLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Orders this week</Text>
+                <Text style={[styles.performValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{s?.ordersThisWeek || 0}</Text>
+              </View>
+              <View style={styles.performItem}>
+                <Feather name="shopping-bag" size={14} color="#e74c3c" />
+                <Text style={[styles.performLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Orders this month</Text>
+                <Text style={[styles.performValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{s?.ordersThisMonth || 0}</Text>
+              </View>
+            </View>
+          </View>
+
+          {dailyViewData.length > 2 && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <Text style={[styles.chartTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Profile Views</Text>
+              <Text style={[styles.chartSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Daily views trend</Text>
+              <MiniChart data={dailyViewData} color="#6366f1" height={50} />
+            </View>
+          )}
+
+          {dailyOrderData.length > 2 && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+              <Text style={[styles.chartTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Orders</Text>
+              <Text style={[styles.chartSubtitle, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Daily orders trend</Text>
+              <MiniChart data={dailyOrderData} color="#f59e0b" height={50} />
+            </View>
+          )}
 
           {listing && (
             <View style={[styles.listingInfo, { borderColor: colors.border, borderRadius: colors.radius }]}>
               <Text style={[styles.listingName, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>{listing.name}</Text>
-              <Text style={[styles.listingMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{listing.area}, {listing.city} · {listing.status || "Active"}</Text>
+              <Text style={[styles.listingMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{listing.area}, {listing.city}</Text>
             </View>
           )}
 
@@ -100,12 +193,28 @@ export default function VendorDashboard() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   heading: { fontSize: 22, marginBottom: 2 },
-  subheading: { fontSize: 14, marginBottom: 20 },
+  subheading: { fontSize: 14 },
+  statusBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 6 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 12, textTransform: "capitalize" },
   statsRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
-  statCard: { flex: 1, borderWidth: 1, padding: 16, alignItems: "center", gap: 4 },
+  statCard: { flex: 1, borderWidth: 1, padding: 14, alignItems: "center", gap: 4 },
+  statIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   statValue: { fontSize: 22 },
   statLabel: { fontSize: 12 },
+  statSublabel: { fontSize: 10, marginTop: -2 },
+  analyticsCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
+  analyticsTitle: { fontSize: 16, marginBottom: 2 },
+  analyticsPeriod: { fontSize: 12, marginBottom: 16 },
+  performRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  performItem: { flex: 1, flexDirection: "column", gap: 4 },
+  performLabel: { fontSize: 11 },
+  performValue: { fontSize: 18 },
+  chartCard: { borderWidth: 1, padding: 16, marginBottom: 12 },
+  chartTitle: { fontSize: 14, marginBottom: 2 },
+  chartSubtitle: { fontSize: 11, marginBottom: 12 },
   listingInfo: { borderWidth: 1, padding: 16, marginBottom: 16 },
   listingName: { fontSize: 16, marginBottom: 4 },
   listingMeta: { fontSize: 13 },

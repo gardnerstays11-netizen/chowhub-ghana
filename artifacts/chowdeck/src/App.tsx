@@ -23,6 +23,7 @@ import AdminLogin from "@/pages/admin/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminPartners from "@/pages/admin/partners";
 import AdminSettings from "@/pages/admin/settings";
+import AdminSubscriptions from "@/pages/admin/subscriptions";
 
 import NotFound from "@/pages/not-found";
 
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/subscriptions" component={AdminSubscriptions} />
 
       <Route component={NotFound} />
     </Switch>
