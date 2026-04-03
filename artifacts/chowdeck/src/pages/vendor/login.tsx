@@ -82,7 +82,7 @@ export default function VendorLogin() {
         </Form>
 
         <p className="mt-4 text-center">
-          <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">Forgot password?</Link>
+          <Link href="/vendor/forgot-password" className="text-sm text-muted-foreground hover:text-primary hover:underline">Forgot password?</Link>
         </p>
         <div className="mt-3 text-center text-sm text-muted-foreground">
           Want to list your restaurant? <Link href="/vendor/register" className="text-primary font-bold hover:underline">Register here</Link>

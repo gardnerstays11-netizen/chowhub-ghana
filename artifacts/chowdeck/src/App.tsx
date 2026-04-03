@@ -26,6 +26,8 @@ import VendorReviews from "@/pages/vendor/reviews";
 import VendorAnalytics from "@/pages/vendor/analytics";
 import VendorSettings from "@/pages/vendor/settings";
 import VendorSubscription from "@/pages/vendor/subscription";
+import VendorForgotPassword from "@/pages/vendor/forgot-password";
+import VendorResetPassword from "@/pages/vendor/reset-password";
 
 // Admin
 import AdminLogin from "@/pages/admin/login";
@@ -72,6 +74,8 @@ function Router() {
       <Route path="/vendor/analytics" component={VendorAnalytics} />
       <Route path="/vendor/settings" component={VendorSettings} />
       <Route path="/vendor/subscription" component={VendorSubscription} />
+      <Route path="/vendor/forgot-password" component={VendorForgotPassword} />
+      <Route path="/vendor/reset-password" component={VendorResetPassword} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
