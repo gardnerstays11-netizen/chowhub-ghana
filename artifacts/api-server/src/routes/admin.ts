@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { db, usersTable, vendorsTable, listingsTable, listingPhotosTable, reviewsTable, reservationsTable, ordersTable } from "@workspace/db";
+import { eq, and, desc, sql, inArray, gte } from "drizzle-orm";
+import { db, usersTable, vendorsTable, listingsTable, listingPhotosTable, reviewsTable, reservationsTable, ordersTable, searchLogsTable } from "@workspace/db";
 import { adminAuthMiddleware } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -178,6 +178,86 @@ router.get("/admin/reviews", adminAuthMiddleware, async (_req, res): Promise<voi
     userName: r.userName ?? null, listingName: r.listingName ?? null,
     createdAt: r.review.createdAt.toISOString(),
   })));
+});
+
+router.get("/admin/search-analytics", adminAuthMiddleware, async (req, res): Promise<void> => {
+  const days = parseInt(req.query.days as string) || 30;
+  const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  const topSearches = await db.select({
+    query: searchLogsTable.query,
+    count: sql<number>`count(*)`,
+    avgResults: sql<number>`avg(${searchLogsTable.resultsCount})`,
+    lastSearched: sql<string>`max(${searchLogsTable.createdAt})`,
+  }).from(searchLogsTable)
+    .where(gte(searchLogsTable.createdAt, since))
+    .groupBy(searchLogsTable.query)
+    .orderBy(sql`count(*) desc`)
+    .limit(limit);
+
+  const topCategories = await db.select({
+    category: searchLogsTable.category,
+    count: sql<number>`count(*)`,
+  }).from(searchLogsTable)
+    .where(and(gte(searchLogsTable.createdAt, since), sql`${searchLogsTable.category} is not null`))
+    .groupBy(searchLogsTable.category)
+    .orderBy(sql`count(*) desc`)
+    .limit(20);
+
+  const topCities = await db.select({
+    city: searchLogsTable.city,
+    count: sql<number>`count(*)`,
+  }).from(searchLogsTable)
+    .where(and(gte(searchLogsTable.createdAt, since), sql`${searchLogsTable.city} is not null`))
+    .groupBy(searchLogsTable.city)
+    .orderBy(sql`count(*) desc`)
+    .limit(20);
+
+  const [totalStats] = await db.select({
+    totalSearches: sql<number>`count(*)`,
+    uniqueQueries: sql<number>`count(distinct ${searchLogsTable.query})`,
+    uniqueUsers: sql<number>`count(distinct ${searchLogsTable.userId})`,
+    zeroResultSearches: sql<number>`count(*) filter (where ${searchLogsTable.resultsCount} = 0)`,
+  }).from(searchLogsTable)
+    .where(gte(searchLogsTable.createdAt, since));
+
+  const dailyVolume = await db.select({
+    date: sql<string>`date(${searchLogsTable.createdAt})`,
+    count: sql<number>`count(*)`,
+  }).from(searchLogsTable)
+    .where(gte(searchLogsTable.createdAt, since))
+    .groupBy(sql`date(${searchLogsTable.createdAt})`)
+    .orderBy(sql`date(${searchLogsTable.createdAt}) desc`)
+    .limit(30);
+
+  res.json({
+    period: { days, since: since.toISOString() },
+    stats: {
+      totalSearches: Number(totalStats.totalSearches),
+      uniqueQueries: Number(totalStats.uniqueQueries),
+      uniqueUsers: Number(totalStats.uniqueUsers),
+      zeroResultSearches: Number(totalStats.zeroResultSearches),
+    },
+    topSearches: topSearches.map(s => ({
+      query: s.query,
+      count: Number(s.count),
+      avgResults: Math.round(Number(s.avgResults)),
+      lastSearched: s.lastSearched,
+    })),
+    topCategories: topCategories.map(c => ({
+      category: c.category,
+      count: Number(c.count),
+    })),
+    topCities: topCities.map(c => ({
+      city: c.city,
+      count: Number(c.count),
+    })),
+    dailyVolume: dailyVolume.map(d => ({
+      date: d.date,
+      count: Number(d.count),
+    })),
+  });
 });
 
 router.delete("/admin/reviews/:reviewId", adminAuthMiddleware, async (req, res): Promise<void> => {

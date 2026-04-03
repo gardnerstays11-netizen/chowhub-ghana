@@ -8,3 +8,4 @@ export * from "./orders";
 export * from "./reviews";
 export * from "./saved-places";
 export * from "./subscriptions";
+export * from "./search-logs";

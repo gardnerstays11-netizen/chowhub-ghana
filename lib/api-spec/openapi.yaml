@@ -369,6 +369,32 @@ paths:
                 items:
                   $ref: "#/components/schemas/ListingCard"
 
+  /listings/autocomplete:
+    get:
+      operationId: getListingAutocomplete
+      tags: [listings]
+      summary: Autocomplete listing search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 8
+      responses:
+        "200":
+          description: Autocomplete suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AutocompleteSuggestion"
+
   /listings/nearby:
     get:
       operationId: getNearbyListings
@@ -1203,6 +1229,52 @@ paths:
         "204":
           description: Deleted
 
+  /admin/search-analytics:
+    get:
+      operationId: getSearchAnalytics
+      tags: [admin]
+      summary: Get search analytics and trends
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Search analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchAnalytics"
+
+  /search-logs:
+    post:
+      operationId: logSearch
+      tags: [listings]
+      summary: Log a search query for analytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogSearchBody"
+      responses:
+        "201":
+          description: Search logged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged:
+                    type: boolean
+
 components:
   schemas:
     HealthStatus:
@@ -2022,3 +2094,106 @@ components:
           type: string
           enum: [active, inactive, pending]
       required: [status]
+
+    AutocompleteSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        city:
+          type: string
+        area:
+          type: string
+      required: [id, name, slug, category, city, area]
+
+    LogSearchBody:
+      type: object
+      properties:
+        query:
+          type: string
+        city:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        filters:
+          type: object
+        resultsCount:
+          type: integer
+        sessionId:
+          type: ["string", "null"]
+      required: [query, resultsCount]
+
+    SearchAnalytics:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            days:
+              type: integer
+            since:
+              type: string
+          required: [days, since]
+        stats:
+          type: object
+          properties:
+            totalSearches:
+              type: integer
+            uniqueQueries:
+              type: integer
+            uniqueUsers:
+              type: integer
+            zeroResultSearches:
+              type: integer
+          required: [totalSearches, uniqueQueries, uniqueUsers, zeroResultSearches]
+        topSearches:
+          type: array
+          items:
+            type: object
+            properties:
+              query:
+                type: string
+              count:
+                type: integer
+              avgResults:
+                type: integer
+              lastSearched:
+                type: string
+            required: [query, count, avgResults, lastSearched]
+        topCategories:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
+            required: [category, count]
+        topCities:
+          type: array
+          items:
+            type: object
+            properties:
+              city:
+                type: string
+              count:
+                type: integer
+            required: [city, count]
+        dailyVolume:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              count:
+                type: integer
+            required: [date, count]
+      required: [period, stats, topSearches, topCategories, topCities, dailyVolume]

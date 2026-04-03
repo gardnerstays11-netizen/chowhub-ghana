@@ -176,6 +176,35 @@ router.get("/listings/top-rated", async (req, res): Promise<void> => {
   res.json(listings.map(l => formatListingCard(l, coverMap.get(l.id))));
 });
 
+router.get("/listings/autocomplete", async (req, res): Promise<void> => {
+  const q = (req.query.q as string || "").trim();
+  const limit = Math.min(parseInt(req.query.limit as string) || 8, 20);
+  if (!q || q.length < 2) { res.json([]); return; }
+
+  const search = `%${q}%`;
+  const listings = await db.select({
+    id: listingsTable.id,
+    name: listingsTable.name,
+    slug: listingsTable.slug,
+    category: listingsTable.category,
+    city: listingsTable.city,
+    area: listingsTable.area,
+  }).from(listingsTable)
+    .where(and(
+      eq(listingsTable.status, "active"),
+      or(
+        ilike(listingsTable.name, search),
+        ilike(listingsTable.area, search),
+        ilike(listingsTable.city, search),
+        ilike(listingsTable.description, search),
+      )
+    ))
+    .orderBy(desc(listingsTable.averageRating))
+    .limit(limit);
+
+  res.json(listings);
+});
+
 router.get("/listings/nearby", async (req, res): Promise<void> => {
   const lat = parseFloat(req.query.lat as string);
   const lng = parseFloat(req.query.lng as string);

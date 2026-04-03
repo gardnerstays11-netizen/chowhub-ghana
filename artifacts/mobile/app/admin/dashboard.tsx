@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGetAdminStats, useGetAdminVendors, useGetAdminListings, useApproveVendor, useRejectVendor } from "@workspace/api-client-react";
+import { useGetAdminStats, useGetAdminVendors, useGetAdminListings, useApproveVendor, useRejectVendor, useGetSearchAnalytics } from "@workspace/api-client-react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
@@ -18,6 +18,7 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useGetAdminStats({ query: { enabled: isAdmin } as any });
   const { data: vendors } = useGetAdminVendors(undefined, { query: { enabled: isAdmin } as any });
   const { data: listings } = useGetAdminListings(undefined, { query: { enabled: isAdmin } as any });
+  const { data: analytics } = useGetSearchAnalytics({ days: 30 }, { query: { enabled: isAdmin } as any });
 
   const approveMut = useApproveVendor();
   const rejectMut = useRejectVendor();
@@ -77,6 +78,40 @@ export default function AdminDashboard() {
         </>
       ) : null}
 
+      {analytics && (
+        <View style={[styles.section, { borderColor: colors.border, borderRadius: colors.radius }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 16 }}>
+            <Feather name="bar-chart-2" size={18} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold", padding: 0 }]}>Search Analytics (30d)</Text>
+          </View>
+          <View style={styles.statsRow}>
+            <View style={[styles.miniStat, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+              <Text style={[styles.miniStatValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{analytics.stats.totalSearches}</Text>
+              <Text style={[styles.miniStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Searches</Text>
+            </View>
+            <View style={[styles.miniStat, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+              <Text style={[styles.miniStatValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{analytics.stats.uniqueQueries}</Text>
+              <Text style={[styles.miniStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Unique</Text>
+            </View>
+            <View style={[styles.miniStat, { backgroundColor: colors.muted, borderRadius: colors.radius }]}>
+              <Text style={[styles.miniStatValue, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>{analytics.stats.zeroResultSearches}</Text>
+              <Text style={[styles.miniStatLabel, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>No Results</Text>
+            </View>
+          </View>
+          {analytics.topSearches.slice(0, 5).map((s: any, i: number) => (
+            <View key={i} style={[styles.vendorRow, { borderTopColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.vendorName, { color: colors.foreground, fontFamily: "Inter_500Medium" }]}>"{s.query}"</Text>
+                <Text style={[styles.vendorMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>{s.count} searches · ~{s.avgResults} results</Text>
+              </View>
+            </View>
+          ))}
+          {analytics.topSearches.length === 0 && (
+            <Text style={[styles.vendorMeta, { color: colors.mutedForeground, fontFamily: "Inter_400Regular", padding: 16 }]}>No search data yet</Text>
+          )}
+        </View>
+      )}
+
       {vendors && vendors.length > 0 && (
         <View style={[styles.section, { borderColor: colors.border, borderRadius: colors.radius }]}>
           <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_600SemiBold" }]}>Vendors</Text>
@@ -131,6 +166,9 @@ const styles = StyleSheet.create({
   vendorRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   vendorName: { fontSize: 14, marginBottom: 2 },
   vendorMeta: { fontSize: 12 },
+  miniStat: { flex: 1, padding: 12, alignItems: "center", gap: 2 },
+  miniStatValue: { fontSize: 18 },
+  miniStatLabel: { fontSize: 11 },
   smallBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   emptyText: { fontSize: 15 },
   actionBtn: { paddingHorizontal: 32, paddingVertical: 12, marginTop: 8 },

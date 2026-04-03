@@ -1,31 +1,59 @@
-import { View, Text, StyleSheet, FlatList, TextInput, Pressable, ActivityIndicator, Platform, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Platform, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
-import { useGetFeaturedListings, useGetRecentListings } from "@workspace/api-client-react";
+import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings } from "@workspace/api-client-react";
 import { ListingCard } from "@/components/ListingCard";
 import { useRouter } from "expo-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+function useGeolocation() {
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLoading(false);
+      },
+      () => setLoading(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  return { coords, loading };
+}
 
 export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const isWeb = Platform.OS === "web";
+
+  const { coords } = useGeolocation();
   const { data: featured, isLoading: fl, refetch: rf } = useGetFeaturedListings();
   const { data: recent, isLoading: rl, refetch: rr } = useGetRecentListings({ limit: 10 });
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: nearby, refetch: rn } = useGetNearbyListings(
+    { lat: coords?.lat || 0, lng: coords?.lng || 0, radius: 10, limit: 6 },
+    { query: { enabled: !!coords } as any }
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([rf(), rr()]);
+    await Promise.all([rf(), rr(), coords ? rn() : Promise.resolve()]);
     setRefreshing(false);
-  }, [rf, rr]);
-
-  const isWeb = Platform.OS === "web";
+  }, [rf, rr, rn, coords]);
 
   const sections: Array<{ key: string; listing?: any }> = [
     { key: "header" },
+    ...(coords && nearby && nearby.length > 0 ? [
+      { key: "nearby_title" },
+      ...nearby.map((l: any) => ({ key: `n_${l.id}`, listing: l })),
+    ] : []),
     { key: "featured_title" },
     ...(featured || []).map((l: any) => ({ key: `f_${l.id}`, listing: l })),
     { key: "recent_title" },
@@ -58,9 +86,24 @@ export default function HomeScreen() {
               </View>
             );
           }
-          if (item.key === "featured_title") {
+          if (item.key === "nearby_title") {
             return (
               <View style={styles.sectionHeader}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={[styles.nearbyIcon, { backgroundColor: colors.primary + "18" }]}>
+                    <Feather name="navigation" size={14} color={colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Near you</Text>
+                    <Text style={[styles.sectionSub, { color: colors.mutedForeground, fontFamily: "Inter_400Regular" }]}>Restaurants close to your location</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          }
+          if (item.key === "featured_title") {
+            return (
+              <View style={[styles.sectionHeader, nearby && nearby.length > 0 ? { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8 } : {}]}>
                 <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Inter_700Bold" }]}>Featured places</Text>
               </View>
             );
@@ -101,6 +144,8 @@ const styles = StyleSheet.create({
   searchPlaceholder: { fontSize: 14 },
   sectionHeader: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   sectionTitle: { fontSize: 20 },
+  sectionSub: { fontSize: 12, marginTop: 1 },
+  nearbyIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   cardWrapper: { paddingHorizontal: 20 },
   loading: { paddingTop: 60, alignItems: "center" },
 });

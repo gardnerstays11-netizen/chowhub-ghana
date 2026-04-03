@@ -1,12 +1,12 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useGetAdminStats, useGetAdminVendors, useApproveVendor, useRejectVendor } from "@workspace/api-client-react";
+import { useGetAdminStats, useGetAdminVendors, useApproveVendor, useRejectVendor, useGetSearchAnalytics } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useLocation, Link } from "wouter";
 import { useEffect } from "react";
-import { Users, Store, MapPin, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Users, Store, MapPin, CheckCircle, XCircle, LogOut, Search, TrendingUp, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetAdminVendorsQueryKey } from "@workspace/api-client-react";
@@ -25,6 +25,7 @@ export default function AdminDashboard() {
 
   const { data: stats } = useGetAdminStats({ query: { enabled: isAdminAuthenticated } });
   const { data: pendingVendors } = useGetAdminVendors({ status: 'pending' }, { query: { enabled: isAdminAuthenticated } });
+  const { data: analytics } = useGetSearchAnalytics({ days: 30 }, { query: { enabled: isAdminAuthenticated } as any });
   
   const approveVendor = useApproveVendor();
   const rejectVendor = useRejectVendor();
@@ -119,6 +120,112 @@ export default function AdminDashboard() {
               <div className="h-1 bg-amber-500 w-full"></div>
             </Card>
           </div>
+
+          {analytics && (
+            <div className="mb-10">
+              <h2 className="text-xl font-bold text-zinc-900 mb-6 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" /> Search Analytics (30 days)
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <Card className="border-0 shadow-sm rounded-xl">
+                  <CardContent className="p-5 bg-white">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Search className="w-4 h-4 text-blue-500" />
+                      <p className="text-sm font-medium text-zinc-500">Total Searches</p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900">{analytics.stats.totalSearches.toLocaleString()}</h3>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm rounded-xl">
+                  <CardContent className="p-5 bg-white">
+                    <div className="flex items-center gap-3 mb-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <p className="text-sm font-medium text-zinc-500">Unique Queries</p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900">{analytics.stats.uniqueQueries.toLocaleString()}</h3>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm rounded-xl">
+                  <CardContent className="p-5 bg-white">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Users className="w-4 h-4 text-purple-500" />
+                      <p className="text-sm font-medium text-zinc-500">Unique Searchers</p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900">{analytics.stats.uniqueUsers.toLocaleString()}</h3>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm rounded-xl">
+                  <CardContent className="p-5 bg-white">
+                    <div className="flex items-center gap-3 mb-2">
+                      <XCircle className="w-4 h-4 text-red-500" />
+                      <p className="text-sm font-medium text-zinc-500">Zero Results</p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-zinc-900">{analytics.stats.zeroResultSearches.toLocaleString()}</h3>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-zinc-100">
+                    <h3 className="font-semibold text-zinc-900">Top Searches</h3>
+                  </div>
+                  <div className="divide-y divide-zinc-100 max-h-64 overflow-y-auto">
+                    {analytics.topSearches.slice(0, 10).map((s, i) => (
+                      <div key={i} className="px-6 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-400 font-mono w-5">{i + 1}</span>
+                          <span className="text-sm font-medium text-zinc-900">"{s.query}"</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-zinc-500">
+                          <span>{s.count} searches</span>
+                          <span>~{s.avgResults} results</span>
+                        </div>
+                      </div>
+                    ))}
+                    {analytics.topSearches.length === 0 && (
+                      <div className="px-6 py-8 text-center text-sm text-zinc-400">No search data yet</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-zinc-100">
+                      <h3 className="font-semibold text-zinc-900">Top Categories</h3>
+                    </div>
+                    <div className="divide-y divide-zinc-100">
+                      {analytics.topCategories.slice(0, 5).map((c, i) => (
+                        <div key={i} className="px-6 py-3 flex items-center justify-between">
+                          <span className="text-sm capitalize text-zinc-700">{(c.category || "").replace(/_/g, " ")}</span>
+                          <span className="text-xs text-zinc-500">{c.count}</span>
+                        </div>
+                      ))}
+                      {analytics.topCategories.length === 0 && (
+                        <div className="px-6 py-4 text-center text-sm text-zinc-400">No data</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm border border-zinc-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-zinc-100">
+                      <h3 className="font-semibold text-zinc-900">Top Cities</h3>
+                    </div>
+                    <div className="divide-y divide-zinc-100">
+                      {analytics.topCities.slice(0, 5).map((c, i) => (
+                        <div key={i} className="px-6 py-3 flex items-center justify-between">
+                          <span className="text-sm text-zinc-700">{c.city}</span>
+                          <span className="text-xs text-zinc-500">{c.count}</span>
+                        </div>
+                      ))}
+                      {analytics.topCities.length === 0 && (
+                        <div className="px-6 py-4 text-center text-sm text-zinc-400">No data</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mb-8">
             <h2 className="text-xl font-bold text-zinc-900 mb-6">Pending Vendor Applications</h2>

@@ -519,6 +519,72 @@ export interface UpdateListingStatusBody {
   status: UpdateListingStatusBodyStatus;
 }
 
+export interface AutocompleteSuggestion {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  city: string;
+  area: string;
+}
+
+export type LogSearchBodyFilters = { [key: string]: unknown };
+
+export interface LogSearchBody {
+  query: string;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  category?: string | null;
+  filters?: LogSearchBodyFilters;
+  resultsCount: number;
+  /** @nullable */
+  sessionId?: string | null;
+}
+
+export type SearchAnalyticsPeriod = {
+  days: number;
+  since: string;
+};
+
+export type SearchAnalyticsStats = {
+  totalSearches: number;
+  uniqueQueries: number;
+  uniqueUsers: number;
+  zeroResultSearches: number;
+};
+
+export type SearchAnalyticsTopSearchesItem = {
+  query: string;
+  count: number;
+  avgResults: number;
+  lastSearched: string;
+};
+
+export type SearchAnalyticsTopCategoriesItem = {
+  category: string;
+  count: number;
+};
+
+export type SearchAnalyticsTopCitiesItem = {
+  city: string;
+  count: number;
+};
+
+export type SearchAnalyticsDailyVolumeItem = {
+  date: string;
+  count: number;
+};
+
+export interface SearchAnalytics {
+  period: SearchAnalyticsPeriod;
+  stats: SearchAnalyticsStats;
+  topSearches: SearchAnalyticsTopSearchesItem[];
+  topCategories: SearchAnalyticsTopCategoriesItem[];
+  topCities: SearchAnalyticsTopCitiesItem[];
+  dailyVolume: SearchAnalyticsDailyVolumeItem[];
+}
+
 export type SearchListingsParams = {
   q?: string;
   category?: string;
@@ -594,6 +660,11 @@ export type GetTopRatedListingsParams = {
   limit?: number;
 };
 
+export type GetListingAutocompleteParams = {
+  q: string;
+  limit?: number;
+};
+
 export type GetNearbyListingsParams = {
   lat: number;
   lng: number;
@@ -629,4 +700,13 @@ export type GetAdminListingsParams = {
   city?: string;
   category?: string;
   status?: string;
+};
+
+export type GetSearchAnalyticsParams = {
+  days?: number;
+  limit?: number;
+};
+
+export type LogSearch201 = {
+  logged?: boolean;
 };

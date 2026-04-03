@@ -342,6 +342,28 @@ export const GetTopRatedListingsResponse = zod.array(
 );
 
 /**
+ * @summary Autocomplete listing search
+ */
+export const getListingAutocompleteQueryLimitDefault = 8;
+
+export const GetListingAutocompleteQueryParams = zod.object({
+  q: zod.coerce.string(),
+  limit: zod.coerce.number().default(getListingAutocompleteQueryLimitDefault),
+});
+
+export const GetListingAutocompleteResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  slug: zod.string(),
+  category: zod.string(),
+  city: zod.string(),
+  area: zod.string(),
+});
+export const GetListingAutocompleteResponse = zod.array(
+  GetListingAutocompleteResponseItem,
+);
+
+/**
  * @summary Get listings near coordinates
  */
 export const getNearbyListingsQueryRadiusDefault = 5;
@@ -1374,4 +1396,66 @@ export const GetAdminReviewsResponse = zod.array(GetAdminReviewsResponseItem);
  */
 export const DeleteReviewParams = zod.object({
   reviewId: zod.coerce.string(),
+});
+
+/**
+ * @summary Get search analytics and trends
+ */
+export const getSearchAnalyticsQueryDaysDefault = 30;
+export const getSearchAnalyticsQueryLimitDefault = 50;
+
+export const GetSearchAnalyticsQueryParams = zod.object({
+  days: zod.coerce.number().default(getSearchAnalyticsQueryDaysDefault),
+  limit: zod.coerce.number().default(getSearchAnalyticsQueryLimitDefault),
+});
+
+export const GetSearchAnalyticsResponse = zod.object({
+  period: zod.object({
+    days: zod.number(),
+    since: zod.string(),
+  }),
+  stats: zod.object({
+    totalSearches: zod.number(),
+    uniqueQueries: zod.number(),
+    uniqueUsers: zod.number(),
+    zeroResultSearches: zod.number(),
+  }),
+  topSearches: zod.array(
+    zod.object({
+      query: zod.string(),
+      count: zod.number(),
+      avgResults: zod.number(),
+      lastSearched: zod.string(),
+    }),
+  ),
+  topCategories: zod.array(
+    zod.object({
+      category: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  topCities: zod.array(
+    zod.object({
+      city: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  dailyVolume: zod.array(
+    zod.object({
+      date: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Log a search query for analytics
+ */
+export const LogSearchBody = zod.object({
+  query: zod.string(),
+  city: zod.string().nullish(),
+  category: zod.string().nullish(),
+  filters: zod.object({}).passthrough().optional(),
+  resultsCount: zod.number(),
+  sessionId: zod.string().nullish(),
 });

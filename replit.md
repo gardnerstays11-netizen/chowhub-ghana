@@ -43,17 +43,19 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 - `orders` — Food orders (delivery/pickup)
 - `saved_places` — User saved/bookmarked listings
 - `subscriptions` — Vendor subscription records
+- `search_logs` — Search query logs for analytics (query, city, category, filters, resultsCount, userId, sessionId)
 
 ### API Routes (under `/api`)
 - Auth: `/auth/register`, `/auth/login`, `/auth/me`, `/auth/vendor/*`, `/auth/admin/login`
-- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/nearby`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Listings: `/listings` (search), `/listings/featured`, `/listings/recent`, `/listings/top-rated`, `/listings/nearby`, `/listings/autocomplete`, `/listings/categories-count`, `/listings/cities-count`, `/listings/cuisines-count`, `/listings/:slug`
+- Search Logs: `POST /search-logs` (log search queries for analytics)
 - Menu: `/listings/:listingId/menu`
 - Reviews: `/listings/:listingId/reviews`, `/reviews/mine`
 - Reservations: `/reservations`, `/reservations/mine`
 - Orders: `/orders`, `/orders/mine`
 - Saved: `/saved`, `/saved/:listingId`
 - Vendor Portal: `/vendor/listing`, `/vendor/menu`, `/vendor/photos`, `/vendor/reservations`, `/vendor/orders`, `/vendor/reviews`, `/vendor/stats`
-- Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`
+- Admin: `/admin/stats`, `/admin/vendors`, `/admin/listings`, `/admin/users`, `/admin/reviews`, `/admin/search-analytics`
 
 ### Design System
 - **Colors**: Deep green `hsl(152 45% 22%)` (primary), Amber/Gold `hsl(38 75% 50%)` (secondary), Warm off-white `hsl(48 33% 97%)` (background)
@@ -79,19 +81,19 @@ Full-stack food discovery platform for the Ghanaian market. pnpm workspace monor
 
 ## Frontend Pages
 
-- `/` — Homepage (hero search, categories, featured & recent listings)
-- `/search` — Search/browse with filters (city, category, cuisine)
+- `/` — Homepage (hero search with autocomplete, categories, nearby listings via geolocation, featured & recent listings)
+- `/search` — Search/browse with autocomplete, live filtering (city, category chips), search logging
 - `/listings/:slug` — Listing detail (description, menu, hours, Call Now, WhatsApp)
 - `/login`, `/register` — User auth
 - `/dashboard` — User dashboard (reservations, orders, saved, reviews)
 - `/vendor/login`, `/vendor/register` — Vendor auth
 - `/vendor/dashboard` — Vendor dashboard (manage listing, menu, orders, reservations)
 - `/admin/login` — Admin login
-- `/admin/dashboard` — Admin dashboard (stats, vendor approval, listing moderation)
+- `/admin/dashboard` — Admin dashboard (stats, search analytics, vendor approval, listing moderation)
 
 ## Mobile App (Expo)
 
-- **Tabs**: Home (featured/recent), Search, Saved, Profile
+- **Tabs**: Home (nearby via geolocation, featured, recent), Search (autocomplete, category chips, search logging), Saved, Profile
 - **Screens**: Listing detail (`listing/[slug]`), Auth (login/register), Vendor portal (login/register/dashboard), Admin portal (login/dashboard), User screens (reservations/orders/reviews)
 - **Auth**: JWT stored in AsyncStorage via AuthContext, supports user/vendor/admin modes
 - **API**: Uses `@workspace/api-client-react` generated hooks with `setBaseUrl` pointing to `EXPO_PUBLIC_DOMAIN`

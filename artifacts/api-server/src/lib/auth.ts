@@ -56,6 +56,19 @@ export function vendorAuthMiddleware(req: Request, res: Response, next: NextFunc
   next();
 }
 
+export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1];
+    const payload = verifyToken(token);
+    if (payload) {
+      (req as any).user = payload;
+      (req as any).userId = payload.id;
+    }
+  }
+  next();
+}
+
 export function adminAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

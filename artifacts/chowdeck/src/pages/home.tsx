@@ -1,10 +1,10 @@
 import { MainLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, ArrowRight } from "lucide-react";
+import { Search, MapPin, ArrowRight, Navigation, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { useGetFeaturedListings, useGetRecentListings } from "@workspace/api-client-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useGetFeaturedListings, useGetRecentListings, useGetNearbyListings, useGetListingAutocomplete } from "@workspace/api-client-react";
 import { ListingCard } from "@/components/listing-card";
 
 const CATEGORIES = [
@@ -16,17 +16,78 @@ const CATEGORIES = [
   { name: "Seafood", slug: "seafood" },
 ];
 
+function useGeolocation() {
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setError("Geolocation not supported");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    requestLocation();
+  }, [requestLocation]);
+
+  return { coords, loading, error, requestLocation };
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("Accra");
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  const { coords, loading: geoLoading } = useGeolocation();
 
   const { data: featured, isLoading: featuredLoading } = useGetFeaturedListings();
   const { data: recent, isLoading: recentLoading } = useGetRecentListings({ limit: 6 });
+  const { data: nearby, isLoading: nearbyLoading } = useGetNearbyListings(
+    { lat: coords?.lat || 0, lng: coords?.lng || 0, radius: 10, limit: 6 },
+    { query: { enabled: !!coords } as any }
+  );
+
+  const { data: suggestions } = useGetListingAutocomplete(
+    { q: search, limit: 6 },
+    { query: { enabled: search.length >= 2 && showAutocomplete } as any }
+  );
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowAutocomplete(false);
     setLocation(`/search?q=${encodeURIComponent(search)}&city=${encodeURIComponent(city)}`);
+  };
+
+  const handleSuggestionClick = (slug: string) => {
+    setShowAutocomplete(false);
+    setLocation(`/listings/${slug}`);
   };
 
   return (
@@ -42,18 +103,47 @@ export default function Home() {
             </p>
 
             <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 max-w-xl">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
+              <div className="flex-1 relative" ref={autocompleteRef}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                <Input
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Restaurant, cuisine, or dish..." 
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setShowAutocomplete(true);
+                  }}
+                  onFocus={() => search.length >= 2 && setShowAutocomplete(true)}
+                  placeholder="Restaurant, cuisine, or dish..."
                   className="pl-9 h-11 bg-white text-foreground border-0 rounded-md"
                 />
+                {showAutocomplete && suggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleSuggestionClick(s.slug)}
+                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3 border-b border-border last:border-0 text-foreground"
+                      >
+                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium">{s.name}</div>
+                          <div className="text-xs text-muted-foreground capitalize">{s.category.replace(/_/g, " ")} · {s.area}, {s.city}</div>
+                        </div>
+                      </button>
+                    ))}
+                    <button
+                      type="submit"
+                      className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center gap-3 text-sm text-primary font-medium"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>See all results for "{search}"</span>
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <select 
+                <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="h-11 pl-9 pr-8 bg-white text-foreground border-0 rounded-md text-sm font-medium appearance-none cursor-pointer"
@@ -71,6 +161,35 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {coords && nearby && nearby.length > 0 && (
+        <section className="py-14">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Navigation className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-2xl">Near you</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">Restaurants close to your location</p>
+                </div>
+              </div>
+            </div>
+            {nearbyLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Finding nearby places...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {nearby.map(listing => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="py-14">
         <div className="container mx-auto px-4">

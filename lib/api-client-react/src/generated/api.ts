@@ -20,6 +20,7 @@ import type {
   AddPhotoBody,
   AdminStats,
   AuthResponse,
+  AutocompleteSuggestion,
   CategoryCount,
   CityCount,
   CreateListingBody,
@@ -33,9 +34,11 @@ import type {
   GetAdminVendorsParams,
   GetCategoriesCountParams,
   GetCuisinesCountParams,
+  GetListingAutocompleteParams,
   GetListingReviewsParams,
   GetNearbyListingsParams,
   GetRecentListingsParams,
+  GetSearchAnalyticsParams,
   GetTopRatedListingsParams,
   GetVendorOrdersParams,
   GetVendorReservationsParams,
@@ -44,6 +47,8 @@ import type {
   ListingDetail,
   ListingPhoto,
   ListingSearchResponse,
+  LogSearch201,
+  LogSearchBody,
   LoginBody,
   MenuItem,
   Order,
@@ -53,6 +58,7 @@ import type {
   Review,
   ReviewsResponse,
   SavedPlace,
+  SearchAnalytics,
   SearchListingsParams,
   UpdateListingBody,
   UpdateListingStatusBody,
@@ -1173,6 +1179,109 @@ export function useGetTopRatedListings<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetTopRatedListingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Autocomplete listing search
+ */
+export const getGetListingAutocompleteUrl = (
+  params: GetListingAutocompleteParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/listings/autocomplete?${stringifiedParams}`
+    : `/api/listings/autocomplete`;
+};
+
+export const getListingAutocomplete = async (
+  params: GetListingAutocompleteParams,
+  options?: RequestInit,
+): Promise<AutocompleteSuggestion[]> => {
+  return customFetch<AutocompleteSuggestion[]>(
+    getGetListingAutocompleteUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetListingAutocompleteQueryKey = (
+  params?: GetListingAutocompleteParams,
+) => {
+  return [`/api/listings/autocomplete`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetListingAutocompleteQueryOptions = <
+  TData = Awaited<ReturnType<typeof getListingAutocomplete>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetListingAutocompleteParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getListingAutocomplete>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetListingAutocompleteQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getListingAutocomplete>>
+  > = ({ signal }) =>
+    getListingAutocomplete(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getListingAutocomplete>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetListingAutocompleteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getListingAutocomplete>>
+>;
+export type GetListingAutocompleteQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Autocomplete listing search
+ */
+
+export function useGetListingAutocomplete<
+  TData = Awaited<ReturnType<typeof getListingAutocomplete>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetListingAutocompleteParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getListingAutocomplete>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetListingAutocompleteQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -4837,4 +4946,187 @@ export const useDeleteReview = <
   TContext
 > => {
   return useMutation(getDeleteReviewMutationOptions(options));
+};
+
+/**
+ * @summary Get search analytics and trends
+ */
+export const getGetSearchAnalyticsUrl = (params?: GetSearchAnalyticsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/search-analytics?${stringifiedParams}`
+    : `/api/admin/search-analytics`;
+};
+
+export const getSearchAnalytics = async (
+  params?: GetSearchAnalyticsParams,
+  options?: RequestInit,
+): Promise<SearchAnalytics> => {
+  return customFetch<SearchAnalytics>(getGetSearchAnalyticsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSearchAnalyticsQueryKey = (
+  params?: GetSearchAnalyticsParams,
+) => {
+  return [`/api/admin/search-analytics`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetSearchAnalyticsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSearchAnalytics>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSearchAnalyticsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSearchAnalytics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetSearchAnalyticsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSearchAnalytics>>
+  > = ({ signal }) => getSearchAnalytics(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSearchAnalytics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSearchAnalyticsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSearchAnalytics>>
+>;
+export type GetSearchAnalyticsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get search analytics and trends
+ */
+
+export function useGetSearchAnalytics<
+  TData = Awaited<ReturnType<typeof getSearchAnalytics>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetSearchAnalyticsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getSearchAnalytics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSearchAnalyticsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Log a search query for analytics
+ */
+export const getLogSearchUrl = () => {
+  return `/api/search-logs`;
+};
+
+export const logSearch = async (
+  logSearchBody: LogSearchBody,
+  options?: RequestInit,
+): Promise<LogSearch201> => {
+  return customFetch<LogSearch201>(getLogSearchUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(logSearchBody),
+  });
+};
+
+export const getLogSearchMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof logSearch>>,
+    TError,
+    { data: BodyType<LogSearchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof logSearch>>,
+  TError,
+  { data: BodyType<LogSearchBody> },
+  TContext
+> => {
+  const mutationKey = ["logSearch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof logSearch>>,
+    { data: BodyType<LogSearchBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return logSearch(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type LogSearchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof logSearch>>
+>;
+export type LogSearchMutationBody = BodyType<LogSearchBody>;
+export type LogSearchMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Log a search query for analytics
+ */
+export const useLogSearch = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof logSearch>>,
+    TError,
+    { data: BodyType<LogSearchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof logSearch>>,
+  TError,
+  { data: BodyType<LogSearchBody> },
+  TContext
+> => {
+  return useMutation(getLogSearchMutationOptions(options));
 };

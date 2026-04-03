@@ -9,6 +9,7 @@ import ordersRouter from "./orders";
 import savedRouter from "./saved";
 import vendorRouter from "./vendor";
 import adminRouter from "./admin";
+import searchLogsRouter from "./search-logs";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(ordersRouter);
 router.use(savedRouter);
 router.use(vendorRouter);
 router.use(adminRouter);
+router.use(searchLogsRouter);
 
 export default router;
