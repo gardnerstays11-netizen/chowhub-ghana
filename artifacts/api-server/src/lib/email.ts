@@ -1,10 +1,53 @@
+import nodemailer from "nodemailer";
+
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
 }
 
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM = process.env.SMTP_FROM || "ChowHub Ghana <noreply@chowhub.gh>";
+
+const smtpConfigured = !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
+
+let transporter: nodemailer.Transporter | null = null;
+
+if (smtpConfigured) {
+  transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+  console.log(`[EMAIL] SMTP configured: ${SMTP_HOST}:${SMTP_PORT}`);
+} else {
+  console.log("[EMAIL] SMTP not configured — emails will be logged to console only");
+}
+
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: SMTP_FROM,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+      console.log(`[EMAIL] Sent to: ${options.to} | Subject: ${options.subject}`);
+      return true;
+    } catch (err) {
+      console.error(`[EMAIL] Failed to send to ${options.to}:`, err);
+      return false;
+    }
+  }
+
   console.log(`[EMAIL] To: ${options.to} | Subject: ${options.subject}`);
   console.log(`[EMAIL] Body preview: ${options.html.replace(/<[^>]*>/g, '').substring(0, 200)}...`);
   return true;

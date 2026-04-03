@@ -14,6 +14,7 @@ import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import PlacesPage from "@/pages/places";
 
 // Vendor
 import VendorLogin from "@/pages/vendor/login";
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/places" component={PlacesPage} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 

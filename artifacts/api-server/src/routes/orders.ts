@@ -1,10 +1,13 @@
 import { Router, type IRouter } from "express";
+import { EventEmitter } from "events";
 import { eq, desc } from "drizzle-orm";
 import { db, ordersTable, listingsTable, usersTable } from "@workspace/db";
 import { authMiddleware } from "../lib/auth";
 import { sendEmail, orderConfirmationEmail, orderStatusUpdateEmail } from "../lib/email";
 
 const router: IRouter = Router();
+export const orderEvents = new EventEmitter();
+orderEvents.setMaxListeners(100);
 
 router.post("/orders", authMiddleware, async (req, res): Promise<void> => {
   const userId = (req as any).user.id;
@@ -133,6 +136,8 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
     await sendEmail({ to: user.email, ...emailContent });
   }
 
+  orderEvents.emit(`order:${orderId}`, { status: order.status, updatedAt: new Date().toISOString() });
+
   res.json({
     id: order.id,
     listingId: order.listingId,
@@ -143,6 +148,34 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
     totalAmount: order.totalAmount,
     paymentStatus: order.paymentStatus,
     createdAt: order.createdAt.toISOString(),
+  });
+});
+
+router.get("/orders/:orderId/stream", authMiddleware, (req, res): void => {
+  const { orderId } = req.params;
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+
+  res.write(`data: ${JSON.stringify({ connected: true })}\n\n`);
+
+  const handler = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  orderEvents.on(`order:${orderId}`, handler);
+
+  const heartbeat = setInterval(() => {
+    res.write(": heartbeat\n\n");
+  }, 30000);
+
+  req.on("close", () => {
+    orderEvents.off(`order:${orderId}`, handler);
+    clearInterval(heartbeat);
   });
 });
 

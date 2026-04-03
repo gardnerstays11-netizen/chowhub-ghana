@@ -18,6 +18,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               <Link href="/search" className={`transition-colors ${location.startsWith('/search') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Discover</Link>
               <Link href="/search?category=fine_dining" className="text-muted-foreground hover:text-foreground transition-colors">Fine Dining</Link>
               <Link href="/search?category=chop_bar" className="text-muted-foreground hover:text-foreground transition-colors">Local Eats</Link>
+              <Link href="/places" className={`transition-colors ${location.startsWith('/places') ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>Places</Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">

@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 import { eq, and, gt, isNull } from "drizzle-orm";
 import { db, usersTable, vendorsTable, passwordResetsTable } from "@workspace/db";
 import { signToken, authMiddleware, vendorAuthMiddleware } from "../lib/auth";
@@ -8,7 +9,23 @@ import { sendEmail, passwordResetEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again in 15 minutes." },
+});
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many password reset requests. Please try again later." },
+});
+
+router.post("/auth/register", authLimiter, async (req, res): Promise<void> => {
   const { name, email, phone, password, city } = req.body;
   if (!name || !email || !password || !phone || !city) {
     res.status(400).json({ error: "All fields are required" });
@@ -46,7 +63,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", authLimiter, async (req, res): Promise<void> => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
@@ -126,7 +143,7 @@ router.patch("/auth/me/update", authMiddleware, async (req, res): Promise<void> 
   });
 });
 
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/forgot-password", forgotPasswordLimiter, async (req, res): Promise<void> => {
   const { email } = req.body;
   if (!email) {
     res.status(400).json({ error: "Email is required" });
@@ -201,7 +218,7 @@ router.post("/auth/reset-password", async (req, res): Promise<void> => {
   res.json({ message: "Password reset successfully. You can now log in with your new password." });
 });
 
-router.post("/auth/vendor/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/vendor/forgot-password", forgotPasswordLimiter, async (req, res): Promise<void> => {
   const { email } = req.body;
   if (!email) {
     res.status(400).json({ error: "Email is required" });
@@ -276,7 +293,7 @@ router.post("/auth/vendor/reset-password", async (req, res): Promise<void> => {
   res.json({ message: "Password reset successfully. You can now log in with your new password." });
 });
 
-router.post("/auth/vendor/register", async (req, res): Promise<void> => {
+router.post("/auth/vendor/register", authLimiter, async (req, res): Promise<void> => {
   const { businessName, email, phone, password } = req.body;
   if (!businessName || !email || !password || !phone) {
     res.status(400).json({ error: "All fields are required" });
@@ -313,7 +330,7 @@ router.post("/auth/vendor/register", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/auth/vendor/login", async (req, res): Promise<void> => {
+router.post("/auth/vendor/login", authLimiter, async (req, res): Promise<void> => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
@@ -367,7 +384,7 @@ router.get("/auth/vendor/me", vendorAuthMiddleware, async (req, res): Promise<vo
   });
 });
 
-router.post("/auth/admin/login", async (req, res): Promise<void> => {
+router.post("/auth/admin/login", authLimiter, async (req, res): Promise<void> => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Email and password are required" });
