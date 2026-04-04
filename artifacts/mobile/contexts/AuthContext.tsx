@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface UserInfo {
   id: string;
@@ -58,16 +60,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const u = await AsyncStorage.getItem("auth_user");
       const v = await AsyncStorage.getItem("auth_vendor");
       const m = await AsyncStorage.getItem("auth_mode");
-      if (t) setToken(t);
+      if (t) {
+        setToken(t);
+        syncPushToken(t);
+      }
       if (u) setUser(JSON.parse(u));
       if (v) setVendor(JSON.parse(v));
       if (m) setMode(m as AuthMode);
     })();
-  }, []);
+  }, [syncPushToken]);
 
   useEffect(() => {
     setAuthTokenGetter(() => token);
   }, [token]);
+
+  const syncPushToken = useCallback(async (authToken: string) => {
+    try {
+      const pushToken = await AsyncStorage.getItem("push_token");
+      if (!pushToken) return;
+      await fetch(`${getApiUrl()}/api/push-tokens`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ token: pushToken, platform: Platform.OS }),
+      });
+    } catch {}
+  }, []);
 
   const loginUser = useCallback(async (t: string, u: UserInfo) => {
     setToken(t);
@@ -78,7 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("auth_user", JSON.stringify(u));
     await AsyncStorage.setItem("auth_mode", "user");
     await AsyncStorage.removeItem("auth_vendor");
-  }, []);
+    syncPushToken(t);
+  }, [syncPushToken]);
 
   const loginVendor = useCallback(async (t: string, v: VendorInfo) => {
     setToken(t);

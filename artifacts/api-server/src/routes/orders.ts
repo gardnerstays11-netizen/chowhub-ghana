@@ -4,6 +4,7 @@ import { eq, desc } from "drizzle-orm";
 import { db, ordersTable, listingsTable, usersTable } from "@workspace/db";
 import { authMiddleware } from "../lib/auth";
 import { sendEmail, orderConfirmationEmail, orderStatusUpdateEmail } from "../lib/email";
+import { sendPushNotification } from "../lib/push";
 
 const router: IRouter = Router();
 export const orderEvents = new EventEmitter();
@@ -137,6 +138,21 @@ router.patch("/orders/:orderId/status", authMiddleware, async (req, res): Promis
   }
 
   orderEvents.emit(`order:${orderId}`, { status: order.status, updatedAt: new Date().toISOString() });
+
+  const statusMessages: Record<string, string> = {
+    confirmed: "Your order has been confirmed!",
+    preparing: "Your order is being prepared",
+    ready: "Your order is ready for pickup!",
+    completed: "Your order has been completed",
+    cancelled: "Your order has been cancelled",
+  };
+  if (statusMessages[status]) {
+    sendPushNotification(order.userId, {
+      title: listing ? listing.name : "Order Update",
+      body: statusMessages[status],
+      data: { orderId: order.id, status },
+    });
+  }
 
   res.json({
     id: order.id,

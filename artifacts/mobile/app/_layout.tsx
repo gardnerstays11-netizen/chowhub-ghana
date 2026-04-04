@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { addNotificationResponseListener } from "@/lib/notifications";
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 
@@ -41,6 +42,16 @@ function RootLayoutNav() {
       router.replace("/onboarding");
     }
   }, [initialRoute]);
+
+  useEffect(() => {
+    const sub = addNotificationResponseListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data?.orderId) {
+        router.push("/user/orders");
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!initialRoute) return null;
 
